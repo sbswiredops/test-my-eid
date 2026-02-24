@@ -1,7 +1,9 @@
 "use client"
 
 import { useState } from "react"
-import { banners as initialBanners } from "@/lib/data"
+import { banners as staticBanners } from "@/lib/data"
+import { useHeroBanners } from "@/hooks/use-api"
+import api from "@/lib/api"
 import type { Banner } from "@/lib/types"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -21,16 +23,18 @@ import Image from "next/image"
 import { toast } from "sonner"
 
 export default function AdminBanners() {
-  const [bannerList, setBannerList] = useState<Banner[]>(initialBanners)
+  const { data: apiBanners, mutate } = useHeroBanners()
+  const bannerList = apiBanners || staticBanners
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editingBanner, setEditingBanner] = useState<Banner | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
 
   const [form, setForm] = useState({
     title: "",
     subtitle: "",
     ctaText: "",
     ctaLink: "",
-    image: "/images/banner-1.jpg",
     active: true,
   })
 
@@ -40,10 +44,10 @@ export default function AdminBanners() {
       subtitle: "",
       ctaText: "",
       ctaLink: "",
-      image: "/images/banner-1.jpg",
       active: true,
     })
     setEditingBanner(null)
+    setSelectedFile(null)
   }
 
   const openEdit = (banner: Banner) => {
@@ -53,47 +57,67 @@ export default function AdminBanners() {
       subtitle: banner.subtitle,
       ctaText: banner.ctaText,
       ctaLink: banner.ctaLink,
-      image: banner.image,
       active: banner.active,
     })
     setDialogOpen(true)
   }
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!form.title || !form.ctaLink) {
       toast.error("Please fill in required fields")
       return
     }
 
-    if (editingBanner) {
-      setBannerList((prev) =>
-        prev.map((b) =>
-          b.id === editingBanner.id ? { ...b, ...form } : b
-        )
-      )
-      toast.success("Banner updated successfully")
-    } else {
-      const newBanner: Banner = {
-        id: `banner-${Date.now()}`,
-        ...form,
+    setLoading(true)
+    try {
+      const formData = new FormData()
+      formData.append("title", form.title)
+      formData.append("subtitle", form.subtitle)
+      formData.append("ctaText", form.ctaText)
+      formData.append("ctaLink", form.ctaLink)
+      formData.append("active", String(form.active))
+
+      if (selectedFile) {
+        formData.append("img", selectedFile)
       }
-      setBannerList((prev) => [...prev, newBanner])
-      toast.success("Banner created successfully")
+
+      if (editingBanner) {
+        await api.banners.updateHeroBanner(editingBanner.id, formData)
+        toast.success("Banner updated successfully")
+      } else {
+        await api.banners.createHeroBanner(formData)
+        toast.success("Banner created successfully")
+      }
+      mutate()
+      setDialogOpen(false)
+      resetForm()
+    } catch (error) {
+      toast.error("Failed to save banner")
+    } finally {
+      setLoading(false)
     }
-
-    setDialogOpen(false)
-    resetForm()
   }
 
-  const handleDelete = (id: string) => {
-    setBannerList((prev) => prev.filter((b) => b.id !== id))
-    toast.success("Banner deleted")
+  const handleDelete = async (id: string) => {
+    try {
+      await api.banners.deleteHeroBanner(id)
+      mutate()
+      toast.success("Banner deleted")
+    } catch (error) {
+      toast.error("Failed to delete banner")
+    }
   }
 
-  const toggleActive = (id: string) => {
-    setBannerList((prev) =>
-      prev.map((b) => (b.id === id ? { ...b, active: !b.active } : b))
-    )
+  const toggleActive = async (banner: Banner) => {
+    try {
+      const formData = new FormData()
+      formData.append("active", String(!banner.active))
+      await api.banners.updateHeroBanner(banner.id, formData)
+      mutate()
+      toast.success("Status updated")
+    } catch {
+      toast.error("Failed to update status")
+    }
   }
 
   return (
@@ -172,6 +196,20 @@ export default function AdminBanners() {
                     placeholder="/shop"
                   />
                 </div>
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="banner-image">Image</Label>
+                  <Input
+                    id="banner-image"
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) =>
+                      setSelectedFile(e.target.files?.[0] || null)
+                    }
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Upload a high-quality banner image
+                  </p>
+                </div>
               </div>
               <div className="flex items-center gap-3">
                 <Switch
@@ -183,8 +221,8 @@ export default function AdminBanners() {
                 />
                 <Label htmlFor="banner-active">Active</Label>
               </div>
-              <Button onClick={handleSave} className="w-full">
-                {editingBanner ? "Update Banner" : "Create Banner"}
+              <Button onClick={handleSave} className="w-full" disabled={loading}>
+                {loading ? "Saving..." : editingBanner ? "Update Banner" : "Create Banner"}
               </Button>
             </div>
           </DialogContent>
@@ -225,7 +263,7 @@ export default function AdminBanners() {
               <div className="flex items-center gap-2 pt-2">
                 <Switch
                   checked={banner.active}
-                  onCheckedChange={() => toggleActive(banner.id)}
+                  onCheckedChange={() => toggleActive(banner)}
                   aria-label={`Toggle ${banner.title}`}
                 />
                 <div className="flex-1" />

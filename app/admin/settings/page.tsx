@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from "react"
 import { defaultSettings } from "@/lib/data"
+import { useApi } from "@/hooks/use-api"
+import api from "@/lib/api"
 import type { StoreSettings } from "@/lib/types"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -19,21 +21,45 @@ function loadSettings(): StoreSettings {
 }
 
 export default function AdminSettings() {
+  const { data: apiSettings, mutate } = useApi<StoreSettings>("/settings")
   const [settings, setSettings] = useState<StoreSettings>(defaultSettings)
+  const [loading, setLoading] = useState(false)
 
   useEffect(() => {
-    setSettings(loadSettings())
-  }, [])
+    if (apiSettings) {
+      setSettings(apiSettings)
+    } else {
+      setSettings(loadSettings())
+    }
+  }, [apiSettings])
 
-  const handleSave = () => {
-    localStorage.setItem("eid-settings", JSON.stringify(settings))
-    toast.success("Settings saved successfully")
+  const handleSave = async () => {
+    setLoading(true)
+    try {
+      await api.settings.update(settings)
+      localStorage.setItem("eid-settings", JSON.stringify(settings))
+      mutate()
+      toast.success("Settings saved successfully")
+    } catch {
+      localStorage.setItem("eid-settings", JSON.stringify(settings))
+      toast.success("Settings saved locally")
+    } finally {
+      setLoading(false)
+    }
   }
 
-  const handleReset = () => {
-    setSettings(defaultSettings)
-    localStorage.removeItem("eid-settings")
-    toast.info("Settings reset to defaults")
+  const handleReset = async () => {
+    try {
+      await api.settings.update(defaultSettings)
+      setSettings(defaultSettings)
+      localStorage.removeItem("eid-settings")
+      mutate()
+      toast.info("Settings reset to defaults")
+    } catch {
+      setSettings(defaultSettings)
+      localStorage.removeItem("eid-settings")
+      toast.info("Settings reset locally")
+    }
   }
 
   return (
@@ -166,7 +192,9 @@ export default function AdminSettings() {
       </div>
 
       <div className="flex gap-3">
-        <Button onClick={handleSave}>Save Settings</Button>
+        <Button onClick={handleSave} disabled={loading}>
+          {loading ? "Saving..." : "Save Settings"}
+        </Button>
         <Button variant="outline" onClick={handleReset}>
           Reset to Defaults
         </Button>

@@ -4,11 +4,19 @@ const bannersApi = {
   getHeroBanners: () => 
     axiosInstance.get("/herobanner").then(res => res.data),
   
-  createHeroBanner: (data: FormData) => 
+  createHeroBanner: (data: FormData) =>
     axiosInstance.post("/herobanner", data, {
       headers: { "Content-Type": "multipart/form-data" },
     }).then(res => res.data),
-  
+
+  updateHeroBanner: (id: string, data: FormData) =>
+    axiosInstance.put(`/herobanner/${id}`, data, {
+      headers: { "Content-Type": "multipart/form-data" },
+    }).then(res => res.data),
+
+  deleteHeroBanner: (id: string) =>
+    axiosInstance.delete(`/herobanner/${id}`).then(res => res.data),
+
   getBottomBanners: () => 
     axiosInstance.get("/herobanner/bottom").then(res => res.data),
   
