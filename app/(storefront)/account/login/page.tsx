@@ -1,42 +1,49 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
-import Link from "next/link"
-import { useAuth } from "@/lib/auth-store"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { toast } from "sonner"
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { useAuth } from "@/lib/auth-store";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { toast } from "sonner";
 
 export default function LoginPage() {
-  const router = useRouter()
-  const { login } = useAuth()
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
-  const [error, setError] = useState("")
-  const [loading, setLoading] = useState(false)
+  const router = useRouter();
+  const { login } = useAuth();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    setError("")
-    setLoading(true)
+    e.preventDefault();
+    setError("");
+    setLoading(true);
 
-    setTimeout(() => {
-      const result = login(email, password)
+    setTimeout(async () => {
+      const result = await login(email, password);
       if (result.success) {
-        toast.success("Welcome back!")
-        if (email === "admin@eidcollection.pk") {
-          router.push("/admin")
-        } else {
-          router.push("/account")
+        toast.success("Welcome back!");
+        // Determine role from stored user (set by auth-store)
+        try {
+          const saved = localStorage.getItem("eid-current-user");
+          const current = saved ? JSON.parse(saved) : null;
+          if (current?.role === "ADMIN") {
+            router.push("/admin");
+          } else {
+            router.push("/account");
+          }
+        } catch {
+          router.push("/account");
         }
       } else {
-        setError(result.error || "Login failed")
+        setError(result.error || "Login failed");
       }
-      setLoading(false)
-    }, 500)
-  }
+      setLoading(false);
+    }, 500);
+  };
 
   return (
     <div className="mx-auto max-w-md px-4 py-16">
@@ -104,5 +111,5 @@ export default function LoginPage() {
         </p>
       </div>
     </div>
-  )
+  );
 }

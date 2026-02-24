@@ -1,17 +1,12 @@
-"use client"
+"use client";
 
-import { useOrders } from "@/lib/order-store"
-import { products as staticProducts, formatPrice } from "@/lib/data"
-import { useAdminDashboard } from "@/hooks/use-api"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import {
-  Package,
-  ShoppingCart,
-  DollarSign,
-  TrendingUp,
-} from "lucide-react"
-import Link from "next/link"
+import { useOrders } from "@/lib/order-store";
+import { products as staticProducts, formatPrice } from "@/lib/data";
+import { useAdminDashboard } from "@/hooks/use-api";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Package, ShoppingCart, DollarSign, TrendingUp } from "lucide-react";
+import Link from "next/link";
 
 const statusColors: Record<string, string> = {
   pending: "bg-yellow-100 text-yellow-800",
@@ -20,23 +15,39 @@ const statusColors: Record<string, string> = {
   shipped: "bg-purple-100 text-purple-800",
   delivered: "bg-green-100 text-green-800",
   cancelled: "bg-red-100 text-red-800",
-}
+};
 
 export default function AdminDashboard() {
-  const { orders: localOrders } = useOrders()
-  const { data: dashboardData } = useAdminDashboard()
+  const { orders: localOrders } = useOrders();
+  const { data: dashboardData } = useAdminDashboard();
 
   // Use dashboard data if available, otherwise fall back to local store calculation
-  const totalRevenue = dashboardData?.totalRevenue ?? localOrders
-    .filter((o) => o.status !== "cancelled")
-    .reduce((sum, o) => sum + o.total, 0)
+  const totalRevenue =
+    dashboardData?.totalRevenue ??
+    localOrders
+      .filter((o) => o.status !== "cancelled")
+      .reduce((sum, o) => sum + o.total, 0);
 
-  const pendingOrders = dashboardData?.pendingOrders ?? localOrders.filter((o) => o.status === "pending").length
-  const deliveredOrders = dashboardData?.deliveredOrders ?? localOrders.filter((o) => o.status === "delivered").length
-  const totalOrdersCount = dashboardData?.totalOrders ?? localOrders.length
-  const productsCount = dashboardData?.totalProducts ?? staticProducts.length
+  const pendingOrders =
+    dashboardData?.pendingOrders ??
+    localOrders.filter((o) => o.status === "pending").length;
+  const deliveredOrders =
+    dashboardData?.deliveredOrders ??
+    localOrders.filter((o) => o.status === "delivered").length;
+  const totalOrdersCount = dashboardData?.totalOrders ?? localOrders.length;
+  const productsCount = dashboardData?.totalProducts ?? staticProducts.length;
 
-  const recentOrders = dashboardData?.recentOrders ?? localOrders.slice(0, 5)
+  // Define the type for an order (adjust fields as needed)
+  type Order = {
+    id: string;
+    customer: { name: string };
+    total: number;
+    status: string;
+    createdAt: string | number | Date;
+  };
+
+  const recentOrders: Order[] =
+    dashboardData?.recentOrders ?? localOrders.slice(0, 5);
 
   return (
     <div className="flex flex-col gap-6">
@@ -63,7 +74,8 @@ export default function AdminDashboard() {
               {formatPrice(totalRevenue)}
             </div>
             <p className="text-xs text-muted-foreground">
-              From {orders.filter((o) => o.status !== "cancelled").length} orders
+              From {localOrders.filter((o) => o.status !== "cancelled").length}{" "}
+              orders
             </p>
           </CardContent>
         </Card>
@@ -96,9 +108,7 @@ export default function AdminDashboard() {
             <div className="text-2xl font-bold text-foreground">
               {productsCount}
             </div>
-            <p className="text-xs text-muted-foreground">
-              Manage your catalog
-            </p>
+            <p className="text-xs text-muted-foreground">Manage your catalog</p>
           </CardContent>
         </Card>
 
@@ -159,7 +169,7 @@ export default function AdminDashboard() {
                   </tr>
                 </thead>
                 <tbody>
-                  {recentOrders.map((order) => (
+                  {recentOrders.map((order: Order) => (
                     <tr key={order.id} className="border-b last:border-0">
                       <td className="py-3 font-mono text-xs">{order.id}</td>
                       <td className="py-3">{order.customer.name}</td>
@@ -184,5 +194,5 @@ export default function AdminDashboard() {
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

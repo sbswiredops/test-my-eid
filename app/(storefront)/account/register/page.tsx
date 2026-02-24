@@ -1,17 +1,17 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
-import Link from "next/link"
-import { useAuth } from "@/lib/auth-store"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { toast } from "sonner"
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { useAuth } from "@/lib/auth-store";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { toast } from "sonner";
 
 export default function RegisterPage() {
-  const router = useRouter()
-  const { register } = useAuth()
+  const router = useRouter();
+  const { register } = useAuth();
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -20,24 +20,24 @@ export default function RegisterPage() {
     confirmPassword: "",
     address: "",
     district: "",
-  })
-  const [error, setError] = useState("")
-  const [loading, setLoading] = useState(false)
+  });
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    setError("")
+    e.preventDefault();
+    setError("");
 
     if (formData.password.length < 6) {
-      setError("Password must be at least 6 characters")
-      return
+      setError("Password must be at least 6 characters");
+      return;
     }
     if (formData.password !== formData.confirmPassword) {
-      setError("Passwords do not match")
-      return
+      setError("Passwords do not match");
+      return;
     }
 
-    setLoading(true)
+    setLoading(true);
     setTimeout(async () => {
       const result = register({
         name: formData.name,
@@ -46,20 +46,31 @@ export default function RegisterPage() {
         password: formData.password,
         address: formData.address,
         district: formData.district,
-      })
+      });
       if ((await result).success) {
-        toast.success("Account created successfully!")
-        router.push("/account")
+        toast.success("Account created successfully!");
+        // Redirect based on role returned/stored by auth
+        try {
+          const saved = localStorage.getItem("eid-current-user");
+          const current = saved ? JSON.parse(saved) : null;
+          if (current?.role === "ADMIN") {
+            router.push("/admin");
+          } else {
+            router.push("/account");
+          }
+        } catch {
+          router.push("/account");
+        }
       } else {
-        setError((await result).error || "Registration failed")
+        setError((await result).error || "Registration failed");
       }
-      setLoading(false)
-    }, 500)
-  }
+      setLoading(false);
+    }, 500);
+  };
 
   const updateField = (field: string, value: string) => {
-    setFormData((prev) => ({ ...prev, [field]: value }))
-  }
+    setFormData((prev) => ({ ...prev, [field]: value }));
+  };
 
   return (
     <div className="mx-auto max-w-md px-4 py-16">
@@ -146,5 +157,5 @@ export default function RegisterPage() {
         </Link>
       </p>
     </div>
-  )
+  );
 }

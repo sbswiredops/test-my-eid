@@ -77,9 +77,10 @@ export interface User {
   email: string
   phone: string
   password: string
-  address: string
-  district: string
+  address?: string
+  district?: string
   createdAt: string
+  role?: "USER" | "ADMIN"
 }
 
 export interface StoreSettings {
@@ -103,4 +104,5 @@ export interface RegisterData {
   address?: string
   district?: string
   notes?: string
+  role?: "USER" | "ADMIN"
 }

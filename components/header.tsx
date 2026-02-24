@@ -1,48 +1,41 @@
-"use client"
+"use client";
 
-import Link from "next/link"
-import { usePathname } from "next/navigation"
-import {
-  ShoppingBag,
-  User,
-  Menu,
-  Search,
-  X,
-  ChevronDown,
-} from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { ShoppingBag, User, Menu, Search, X, ChevronDown } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
   Sheet,
   SheetContent,
   SheetHeader,
   SheetTitle,
   SheetTrigger,
-} from "@/components/ui/sheet"
+} from "@/components/ui/sheet";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { useCart } from "@/lib/cart-store"
-import { useAuth } from "@/lib/auth-store"
-import { categories } from "@/lib/data"
-import { cn } from "@/lib/utils"
-import { useState } from "react"
-import { CartSheet } from "@/components/cart-sheet"
+} from "@/components/ui/dropdown-menu";
+import { useCart } from "@/lib/cart-store";
+import { useAuth } from "@/lib/auth-store";
+import { categories } from "@/lib/data";
+import { cn } from "@/lib/utils";
+import { useState } from "react";
+import { CartSheet } from "@/components/cart-sheet";
 
 const navLinks = [
   { href: "/", label: "Home" },
   { href: "/shop", label: "Shop" },
-]
+];
 
 export function Header() {
-  const pathname = usePathname()
-  const { itemCount } = useCart()
-  const { user, logout } = useAuth()
-  const [mobileOpen, setMobileOpen] = useState(false)
-  const [cartOpen, setCartOpen] = useState(false)
+  const pathname = usePathname();
+  const { itemCount } = useCart();
+  const { user, logout } = useAuth();
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [cartOpen, setCartOpen] = useState(false);
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/60 bg-background/95 backdrop-blur-md supports-[backdrop-filter]:bg-background/80">
@@ -79,7 +72,7 @@ export function Header() {
                     "rounded-md px-3 py-2.5 text-sm font-medium transition-colors hover:bg-accent/20",
                     pathname === link.href
                       ? "bg-primary/10 text-primary"
-                      : "text-foreground"
+                      : "text-foreground",
                   )}
                 >
                   {link.label}
@@ -124,7 +117,7 @@ export function Header() {
                 "rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-accent/20",
                 pathname === link.href
                   ? "text-primary"
-                  : "text-muted-foreground"
+                  : "text-muted-foreground",
               )}
             >
               {link.label}
@@ -181,7 +174,8 @@ export function Header() {
                 <div className="px-2 py-1.5 text-sm font-medium">
                   {user.name}
                 </div>
-                {user.email === "admin@eidcollection.pk" && (
+                {(user.role === "ADMIN" ||
+                  user.email === "admin@eidcollection.pk") && (
                   <DropdownMenuItem asChild>
                     <Link href="/admin">Admin Panel</Link>
                   </DropdownMenuItem>
@@ -192,9 +186,7 @@ export function Header() {
                 <DropdownMenuItem asChild>
                   <Link href="/account?tab=orders">My Orders</Link>
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={logout}>
-                  Log Out
-                </DropdownMenuItem>
+                <DropdownMenuItem onClick={logout}>Log Out</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           ) : (
@@ -209,5 +201,5 @@ export function Header() {
 
       <CartSheet open={cartOpen} onOpenChange={setCartOpen} />
     </header>
-  )
+  );
 }
