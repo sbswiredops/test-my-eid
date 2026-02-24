@@ -2,7 +2,12 @@
 
 import { useSearchParams } from "next/navigation"
 import { useState, useMemo, Suspense } from "react"
-import { products, categories, formatPrice } from "@/lib/data"
+import {
+  products as staticProducts,
+  categories as staticCategories,
+  formatPrice,
+} from "@/lib/data"
+import { useProducts, useCategories } from "@/hooks/use-api"
 import { ProductCard } from "@/components/product-card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -35,8 +40,30 @@ function ShopContent() {
   const [page, setPage] = useState(1)
   const [filterOpen, setFilterOpen] = useState(false)
 
+  // Fetch categories
+  const { data: categoriesData } = useCategories()
+  const categories = categoriesData || staticCategories
+
+  // Fetch products with filters
+  const { data: productsData, isLoading } = useProducts({
+    search,
+    category: selectedCategory !== "all" ? selectedCategory : undefined,
+    sizes: selectedSizes.length > 0 ? selectedSizes.join(",") : undefined,
+    minPrice: priceRange[0],
+    maxPrice: priceRange[1],
+    sort: sortBy,
+    page,
+    limit: ITEMS_PER_PAGE,
+  })
+
+  // Use API data if available, otherwise fall back to client-side filtering of static data
+  const apiProducts = productsData?.data || productsData // handle different response formats
+
   const filtered = useMemo(() => {
-    let result = [...products]
+    if (apiProducts && apiProducts.length > 0) return apiProducts
+
+    // Fallback client-side filtering for demo
+    let result = [...staticProducts]
 
     if (search) {
       const q = search.toLowerCase()

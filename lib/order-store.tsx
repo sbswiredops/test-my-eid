@@ -9,6 +9,8 @@ import {
 } from "react"
 import type { Order, OrderStatus, CartItem, Customer } from "@/lib/types"
 import { defaultSettings } from "@/lib/data"
+import api from "@/lib/api"
+import { useAuth } from "./auth-store"
 
 interface OrderContextType {
   orders: Order[]
@@ -16,8 +18,8 @@ interface OrderContextType {
     items: CartItem[],
     customer: Customer,
     subtotal: number
-  ) => Order
-  updateOrderStatus: (orderId: string, status: OrderStatus) => void
+  ) => Promise<Order>
+  updateOrderStatus: (orderId: string, status: OrderStatus) => Promise<void>
   getOrdersByEmail: (email: string) => Order[]
   getOrderById: (id: string) => Order | undefined
 }
@@ -40,44 +42,71 @@ function saveOrders(orders: Order[]) {
 export function OrderProvider({ children }: { children: ReactNode }) {
   const [orders, setOrders] = useState<Order[]>([])
 
-  useEffect(() => {
-    setOrders(loadOrders())
-  }, [])
+  const { user } = useAuth()
 
-  const createOrder = (
+  useEffect(() => {
+    const fetchOrders = async () => {
+      if (user) {
+        try {
+          const apiOrders = await api.orders.getMyOrders()
+          setOrders(apiOrders)
+        } catch {
+          setOrders(loadOrders())
+        }
+      } else {
+        setOrders(loadOrders())
+      }
+    }
+    fetchOrders()
+  }, [user])
+
+  const createOrder = async (
     items: CartItem[],
     customer: Customer,
     subtotal: number
-  ): Order => {
-    const deliveryCharge =
-      subtotal >= defaultSettings.freeDeliveryThreshold
-        ? 0
-        : defaultSettings.deliveryCharge
+  ): Promise<Order> => {
+    try {
+      const newOrder = await api.orders.create({ items, customer, subtotal })
+      setOrders((prev) => [newOrder, ...prev])
+      return newOrder
+    } catch {
+      const deliveryCharge =
+        subtotal >= defaultSettings.freeDeliveryThreshold
+          ? 0
+          : defaultSettings.deliveryCharge
 
-    const order: Order = {
-      id: `ORD-${Date.now().toString(36).toUpperCase()}`,
-      items,
-      customer,
-      status: "pending",
-      subtotal,
-      deliveryCharge,
-      total: subtotal + deliveryCharge,
-      paymentMethod: "Cash on Delivery",
-      createdAt: new Date().toISOString(),
+      const order: Order = {
+        id: `ORD-${Date.now().toString(36).toUpperCase()}`,
+        items,
+        customer,
+        status: "pending",
+        subtotal,
+        deliveryCharge,
+        total: subtotal + deliveryCharge,
+        paymentMethod: "Cash on Delivery",
+        createdAt: new Date().toISOString(),
+      }
+
+      const updated = [order, ...orders]
+      setOrders(updated)
+      saveOrders(updated)
+      return order
     }
-
-    const updated = [order, ...orders]
-    setOrders(updated)
-    saveOrders(updated)
-    return order
   }
 
-  const updateOrderStatus = (orderId: string, status: OrderStatus) => {
-    const updated = orders.map((o) =>
-      o.id === orderId ? { ...o, status } : o
-    )
-    setOrders(updated)
-    saveOrders(updated)
+  const updateOrderStatus = async (orderId: string, status: OrderStatus) => {
+    try {
+      await api.orders.updateStatus(orderId, status)
+      setOrders((prev) =>
+        prev.map((o) => (o.id === orderId ? { ...o, status } : o))
+      )
+    } catch {
+      const updated = orders.map((o) =>
+        o.id === orderId ? { ...o, status } : o
+      )
+      setOrders(updated)
+      saveOrders(updated)
+    }
   }
 
   const getOrdersByEmail = (email: string) =>

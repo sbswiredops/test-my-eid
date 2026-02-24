@@ -1,7 +1,9 @@
 "use client"
 
 import { useState } from "react"
-import { products as initialProducts, categories, formatPrice } from "@/lib/data"
+import { products as staticProducts, categories as staticCategories, formatPrice } from "@/lib/data"
+import { useProducts, useCategories } from "@/hooks/use-api"
+import api from "@/lib/api"
 import type { Product } from "@/lib/types"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -28,11 +30,17 @@ import Image from "next/image"
 import { toast } from "sonner"
 
 export default function AdminProducts() {
-  const [productsList, setProductsList] = useState<Product[]>(initialProducts)
+  const { data: productsData, mutate: mutateProducts, isLoading: loadingProducts } = useProducts()
+  const { data: categoriesData } = useCategories()
+  const productsList = productsData || staticProducts
+  const categories = categoriesData || staticCategories
+
   const [search, setSearch] = useState("")
   const [filterCategory, setFilterCategory] = useState("all")
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editingProduct, setEditingProduct] = useState<Product | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [selectedImages, setSelectedImages] = useState<FileList | null>(null)
 
   // Form state
   const [form, setForm] = useState({
@@ -44,7 +52,6 @@ export default function AdminProducts() {
     sizes: "",
     featured: false,
     tags: "",
-    image: "/images/prod-1.jpg",
   })
 
   const resetForm = () => {
@@ -57,9 +64,9 @@ export default function AdminProducts() {
       sizes: "",
       featured: false,
       tags: "",
-      image: "/images/prod-1.jpg",
     })
     setEditingProduct(null)
+    setSelectedImages(null)
   }
 
   const openEdit = (product: Product) => {
@@ -73,85 +80,65 @@ export default function AdminProducts() {
       sizes: product.sizes.join(", "),
       featured: product.featured,
       tags: product.tags.join(", "),
-      image: product.images[0] || "/images/prod-1.jpg",
     })
     setDialogOpen(true)
   }
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!form.name || !form.price || !form.category) {
       toast.error("Please fill in required fields")
       return
     }
 
-    const sizes = form.sizes
-      .split(",")
-      .map((s) => s.trim())
-      .filter(Boolean)
-    const stockPerSize: Record<string, number> = {}
-    sizes.forEach((s) => {
-      stockPerSize[s] = 10
-    })
+    setLoading(true)
+    try {
+      const sizes = form.sizes
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean)
 
-    if (editingProduct) {
-      setProductsList((prev) =>
-        prev.map((p) =>
-          p.id === editingProduct.id
-            ? {
-                ...p,
-                name: form.name,
-                slug: form.name.toLowerCase().replace(/\s+/g, "-"),
-                description: form.description,
-                price: parseFloat(form.price),
-                originalPrice: form.originalPrice
-                  ? parseFloat(form.originalPrice)
-                  : undefined,
-                category: form.category,
-                sizes,
-                stockPerSize,
-                featured: form.featured,
-                tags: form.tags
-                  .split(",")
-                  .map((t) => t.trim())
-                  .filter(Boolean),
-                images: [form.image],
-              }
-            : p
-        )
-      )
-      toast.success("Product updated successfully")
-    } else {
-      const newProduct: Product = {
-        id: `prod-${Date.now()}`,
-        name: form.name,
-        slug: form.name.toLowerCase().replace(/\s+/g, "-"),
-        description: form.description,
-        price: parseFloat(form.price),
-        originalPrice: form.originalPrice
-          ? parseFloat(form.originalPrice)
-          : undefined,
-        category: form.category,
-        sizes,
-        stockPerSize,
-        featured: form.featured,
-        tags: form.tags
-          .split(",")
-          .map((t) => t.trim())
-          .filter(Boolean),
-        images: [form.image],
-        createdAt: new Date().toISOString(),
+      const formData = new FormData()
+      formData.append("name", form.name)
+      formData.append("description", form.description)
+      formData.append("price", form.price)
+      formData.append("originalPrice", form.originalPrice)
+      formData.append("category", form.category)
+      formData.append("sizes", JSON.stringify(sizes))
+      formData.append("featured", String(form.featured))
+      formData.append("tags", form.tags)
+
+      if (selectedImages) {
+        for (let i = 0; i < selectedImages.length; i++) {
+          formData.append("images", selectedImages[i])
+        }
       }
-      setProductsList((prev) => [newProduct, ...prev])
-      toast.success("Product created successfully")
-    }
 
-    setDialogOpen(false)
-    resetForm()
+      if (editingProduct) {
+        await api.products.update(editingProduct.id, formData)
+        toast.success("Product updated successfully")
+      } else {
+        await api.products.create(formData)
+        toast.success("Product created successfully")
+      }
+
+      mutateProducts()
+      setDialogOpen(false)
+      resetForm()
+    } catch (error) {
+      toast.error("Failed to save product")
+    } finally {
+      setLoading(false)
+    }
   }
 
-  const handleDelete = (id: string) => {
-    setProductsList((prev) => prev.filter((p) => p.id !== id))
-    toast.success("Product deleted")
+  const handleDelete = async (id: string) => {
+    try {
+      await api.products.delete(id)
+      mutateProducts()
+      toast.success("Product deleted")
+    } catch (error) {
+      toast.error("Failed to delete product")
+    }
   }
 
   const filtered = productsList.filter((p) => {
@@ -288,6 +275,19 @@ export default function AdminProducts() {
                   placeholder="eid, formal, embroidered"
                 />
               </div>
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="images">Product Images</Label>
+                <Input
+                  id="images"
+                  type="file"
+                  multiple
+                  accept="image/*"
+                  onChange={(e) => setSelectedImages(e.target.files)}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Upload up to 10 images. First image will be the cover.
+                </p>
+              </div>
               <div className="flex items-center gap-2">
                 <input
                   type="checkbox"
@@ -300,8 +300,8 @@ export default function AdminProducts() {
                 />
                 <Label htmlFor="featured">Featured product</Label>
               </div>
-              <Button onClick={handleSave} className="w-full">
-                {editingProduct ? "Update Product" : "Create Product"}
+              <Button onClick={handleSave} className="w-full" disabled={loading}>
+                {loading ? "Saving..." : editingProduct ? "Update Product" : "Create Product"}
               </Button>
             </div>
           </DialogContent>
