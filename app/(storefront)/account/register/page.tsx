@@ -38,7 +38,7 @@ export default function RegisterPage() {
     }
 
     setLoading(true)
-    setTimeout(() => {
+    setTimeout(async () => {
       const result = register({
         name: formData.name,
         email: formData.email,
@@ -47,11 +47,11 @@ export default function RegisterPage() {
         address: formData.address,
         district: formData.district,
       })
-      if (result.success) {
+      if ((await result).success) {
         toast.success("Account created successfully!")
         router.push("/account")
       } else {
-        setError(result.error || "Registration failed")
+        setError((await result).error || "Registration failed")
       }
       setLoading(false)
     }, 500)

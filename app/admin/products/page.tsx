@@ -141,7 +141,7 @@ export default function AdminProducts() {
     }
   }
 
-  const filtered = productsList.filter((p) => {
+  const filtered = productsList.filter((p: Product) => {
     const matchesSearch = p.name.toLowerCase().includes(search.toLowerCase())
     const matchesCategory =
       filterCategory === "all" || p.category === filterCategory
@@ -243,7 +243,7 @@ export default function AdminProducts() {
                     <SelectValue placeholder="Select category" />
                   </SelectTrigger>
                   <SelectContent>
-                    {categories.map((cat) => (
+                    {categories.map((cat: { slug: string; name: string }) => (
                       <SelectItem key={cat.slug} value={cat.slug}>
                         {cat.name}
                       </SelectItem>
@@ -325,7 +325,7 @@ export default function AdminProducts() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Categories</SelectItem>
-            {categories.map((cat) => (
+            {categories.map((cat: { slug: string; name: string }) => (
               <SelectItem key={cat.slug} value={cat.slug}>
                 {cat.name}
               </SelectItem>
@@ -359,7 +359,7 @@ export default function AdminProducts() {
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((product) => (
+                {filtered.map((product: Product) => (
                   <tr
                     key={product.id}
                     className="border-b last:border-0 hover:bg-muted/30"

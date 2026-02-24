@@ -95,7 +95,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const register = async (data: Omit<User, "id" | "createdAt">) => {
     try {
-      const { user: userData, accessToken } = await api.auth.register(data as any)
+      const response = await api.auth.register(data as any)
+      const { user: userData, accessToken } = response.data
       setUser(userData)
       localStorage.setItem("eid-current-user", JSON.stringify(userData))
       localStorage.setItem("eid-token", accessToken)

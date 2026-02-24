@@ -89,3 +89,18 @@ export interface StoreSettings {
   deliveryCharge: number
   freeDeliveryThreshold: number
 }
+
+export interface LoginCredentials {
+  email: string
+  password: string
+}
+
+export interface RegisterData {
+  name: string
+  email: string
+  password: string
+  phone?: string
+  address?: string
+  district?: string
+  notes?: string
+}
