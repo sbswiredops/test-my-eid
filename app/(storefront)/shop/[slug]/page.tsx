@@ -2,7 +2,13 @@
 
 import { use } from "react"
 import { notFound } from "next/navigation"
-import { getProductBySlug, getProductsByCategory, formatPrice, products } from "@/lib/data"
+import {
+  getProductBySlug as getStaticProductBySlug,
+  getProductsByCategory,
+  formatPrice,
+  products as staticProducts,
+} from "@/lib/data"
+import { useProduct } from "@/hooks/use-api"
 import { ProductDetail } from "@/components/product-detail"
 import { ProductCard } from "@/components/product-card"
 
@@ -12,10 +18,16 @@ interface Props {
 
 export default function ProductPage({ params }: Props) {
   const { slug } = use(params)
-  const product = getProductBySlug(slug)
+  const { data: apiProduct, isLoading } = useProduct(slug)
 
-  if (!product) {
+  const product = apiProduct || getStaticProductBySlug(slug)
+
+  if (!product && !isLoading) {
     notFound()
+  }
+
+  if (isLoading && !product) {
+    return <div className="mx-auto max-w-7xl px-4 py-8">Loading...</div>
   }
 
   const related = getProductsByCategory(product.category)

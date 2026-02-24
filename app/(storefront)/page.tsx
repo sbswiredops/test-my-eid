@@ -5,10 +5,11 @@ import { Button } from "@/components/ui/button"
 import { ProductCard } from "@/components/product-card"
 import { HeroBanner } from "@/components/hero-banner"
 import {
-  categories,
+  categories as staticCategories,
   getFeaturedProducts,
-  products,
+  products as staticProducts,
 } from "@/lib/data"
+import { useProducts, useCategories } from "@/hooks/use-api"
 import { Truck, Shield, RotateCcw, Phone } from "lucide-react"
 
 const features = [
@@ -35,7 +36,13 @@ const features = [
 ]
 
 export default function HomePage() {
-  const featured = getFeaturedProducts()
+  const { data: productsData } = useProducts()
+  const { data: categoriesData } = useCategories()
+
+  const categories = categoriesData || staticCategories
+  const products = productsData || staticProducts
+
+  const featured = products.filter((p: any) => p.featured)
   const newArrivals = [...products]
     .sort(
       (a, b) =>

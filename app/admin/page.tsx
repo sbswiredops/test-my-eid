@@ -1,7 +1,8 @@
 "use client"
 
 import { useOrders } from "@/lib/order-store"
-import { products, formatPrice } from "@/lib/data"
+import { products as staticProducts, formatPrice } from "@/lib/data"
+import { useAdminDashboard } from "@/hooks/use-api"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import {
@@ -22,16 +23,20 @@ const statusColors: Record<string, string> = {
 }
 
 export default function AdminDashboard() {
-  const { orders } = useOrders()
+  const { orders: localOrders } = useOrders()
+  const { data: dashboardData } = useAdminDashboard()
 
-  const totalRevenue = orders
+  // Use dashboard data if available, otherwise fall back to local store calculation
+  const totalRevenue = dashboardData?.totalRevenue ?? localOrders
     .filter((o) => o.status !== "cancelled")
     .reduce((sum, o) => sum + o.total, 0)
 
-  const pendingOrders = orders.filter((o) => o.status === "pending").length
-  const deliveredOrders = orders.filter((o) => o.status === "delivered").length
+  const pendingOrders = dashboardData?.pendingOrders ?? localOrders.filter((o) => o.status === "pending").length
+  const deliveredOrders = dashboardData?.deliveredOrders ?? localOrders.filter((o) => o.status === "delivered").length
+  const totalOrdersCount = dashboardData?.totalOrders ?? localOrders.length
+  const productsCount = dashboardData?.totalProducts ?? staticProducts.length
 
-  const recentOrders = orders.slice(0, 5)
+  const recentOrders = dashboardData?.recentOrders ?? localOrders.slice(0, 5)
 
   return (
     <div className="flex flex-col gap-6">
@@ -72,7 +77,7 @@ export default function AdminDashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-foreground">
-              {orders.length}
+              {totalOrdersCount}
             </div>
             <p className="text-xs text-muted-foreground">
               {pendingOrders} pending
@@ -89,10 +94,10 @@ export default function AdminDashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-foreground">
-              {products.length}
+              {productsCount}
             </div>
             <p className="text-xs text-muted-foreground">
-              {products.filter((p) => p.featured).length} featured
+              Manage your catalog
             </p>
           </CardContent>
         </Card>
