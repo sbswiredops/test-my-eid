@@ -1,58 +1,79 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
-import { banners as staticBanners } from "@/lib/data"
-import { useHeroBanners } from "@/hooks/use-api"
-import api from "@/lib/api"
-import type { Banner } from "@/lib/types"
-import { Card, CardContent } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Switch } from "@/components/ui/switch"
+import { useState } from "react";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { banners as staticBanners } from "@/lib/data";
+import { useHeroBanners } from "@/hooks/use-api";
+import { bannerService } from "@/lib/api/banners";
+import type { Banner } from "@/lib/types";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog"
-import { Plus, Pencil, Trash2 } from "lucide-react"
-import Image from "next/image"
-import { toast } from "sonner"
+} from "@/components/ui/dialog";
+import { Plus, Pencil, Trash2 } from "lucide-react";
+import Image from "next/image";
+import { toast } from "sonner";
 
 export default function AdminBanners() {
   // Tab state
-  const [activeTab, setActiveTab] = useState("hero")
+  const [activeTab, setActiveTab] = useState("hero");
 
   // Banner APIs (stubbed, to be replaced with real hooks)
-  const { data: heroBanners, mutate: mutateHero } = useHeroBanners()
+  const { data: heroBanners, mutate: mutateHero } = useHeroBanners();
+  const heroList = Array.isArray(heroBanners)
+    ? heroBanners
+    : heroBanners && Array.isArray((heroBanners as { data?: Banner[] })?.data)
+      ? (heroBanners as { data: Banner[] }).data
+      : null;
   // TODO: Replace with real hooks for other banner types
-  const { data: middleBanners, mutate: mutateMiddle } = { data: [], mutate: () => {} }
-  const { data: bottomBanners, mutate: mutateBottom } = { data: [], mutate: () => {} }
-  const { data: giveBanners, mutate: mutateGive } = { data: [], mutate: () => {} }
+  const { data: middleBanners, mutate: mutateMiddle } = {
+    data: [],
+    mutate: () => {},
+  };
+  const { data: bottomBanners, mutate: mutateBottom } = {
+    data: [],
+    mutate: () => {},
+  };
+  const { data: giveBanners, mutate: mutateGive } = {
+    data: [],
+    mutate: () => {},
+  };
+
+  const normalize = (item: any) => ({ ...item, image: item.image || item.img });
 
   const bannerLists = {
-    hero: heroBanners || staticBanners,
-    middle: middleBanners,
-    bottom: bottomBanners,
-    give: giveBanners,
-  }
+    hero: Array.isArray(heroList) ? heroList.map(normalize) : staticBanners,
+    middle: Array.isArray(middleBanners)
+      ? middleBanners.map(normalize)
+      : middleBanners,
+    bottom: Array.isArray(bottomBanners)
+      ? bottomBanners.map(normalize)
+      : bottomBanners,
+    give: Array.isArray(giveBanners) ? giveBanners.map(normalize) : giveBanners,
+  };
 
-  const [dialogOpen, setDialogOpen] = useState(false)
-  const [editingBanner, setEditingBanner] = useState<Banner | null>(null)
-  const [loading, setLoading] = useState(false)
-  const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingBanner, setEditingBanner] = useState<Banner | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   const [form, setForm] = useState({
     title: "",
     subtitle: "",
     ctaText: "",
     ctaLink: "",
+    index: "",
     active: true,
-  })
+  });
 
   const resetForm = () => {
     setForm({
@@ -60,82 +81,151 @@ export default function AdminBanners() {
       subtitle: "",
       ctaText: "",
       ctaLink: "",
+      index: "",
       active: true,
-    })
-    setEditingBanner(null)
-    setSelectedFile(null)
-  }
+    });
+    setEditingBanner(null);
+    setSelectedFile(null);
+  };
 
   const openEdit = (banner: Banner) => {
-    setEditingBanner(banner)
+    setEditingBanner(banner);
     setForm({
       title: banner.title,
       subtitle: banner.subtitle,
       ctaText: banner.ctaText,
       ctaLink: banner.ctaLink,
+      index: banner.index?.toString() || "",
       active: banner.active,
-    })
-    setDialogOpen(true)
-  }
+    });
+    setDialogOpen(true);
+  };
 
   const handleSave = async () => {
     if (!form.title || !form.ctaLink) {
-      toast.error("Please fill in required fields")
-      return
+      toast.error("Please fill in required fields");
+      return;
     }
 
-    setLoading(true)
+    setLoading(true);
     try {
-      const formData = new FormData()
-      formData.append("title", form.title)
-      formData.append("subtitle", form.subtitle)
-      formData.append("ctaText", form.ctaText)
-      formData.append("ctaLink", form.ctaLink)
-      formData.append("active", String(form.active))
+      const formData = new FormData();
+      formData.append("title", form.title);
+      formData.append("subtitle", form.subtitle);
+      formData.append("ctaText", form.ctaText);
+      formData.append("ctaLink", form.ctaLink);
+      formData.append("index", form.index);
+      formData.append("active", String(form.active));
 
       if (selectedFile) {
-        formData.append("img", selectedFile)
+        // Some backends validate a body 'img' field; include filename text plus file
+        formData.append("img", selectedFile.name);
+        formData.append("img", selectedFile);
+      }
+
+      // Per-banner-type API
+      let createFn, updateFn, mutateFn;
+      if (activeTab === "hero") {
+        createFn = bannerService.createHeroBanner;
+        updateFn = bannerService.updateHeroBanner;
+        mutateFn = mutateHero;
+      } else if (activeTab === "middle") {
+        createFn = bannerService.createMiddleBanner;
+        updateFn = bannerService.updateMiddleBanner;
+        mutateFn = mutateMiddle;
+      } else if (activeTab === "bottom") {
+        createFn = bannerService.createBottomBanner;
+        updateFn = bannerService.updateBottomBanner;
+        mutateFn = mutateBottom;
+      } else if (activeTab === "give") {
+        createFn = bannerService.createGiveBanner;
+        updateFn = bannerService.updateGiveBanner;
+        mutateFn = mutateGive;
       }
 
       if (editingBanner) {
-        await api.banners.updateHeroBanner(editingBanner.id, formData)
-        toast.success("Banner updated successfully")
+        if (updateFn) {
+          await updateFn(editingBanner.id, formData);
+          toast.success("Banner updated successfully");
+        } else {
+          toast.error("Update function is not defined");
+        }
       } else {
-        await api.banners.createHeroBanner(formData)
-        toast.success("Banner created successfully")
+        if (createFn) {
+          await createFn(formData);
+          toast.success("Banner created successfully");
+        } else {
+          toast.error("Create function is not defined");
+        }
       }
-      // TODO: Use correct mutate function based on activeTab
-      mutateHero()
-      setDialogOpen(false)
-      resetForm()
+      if (mutateFn) mutateFn();
+      setDialogOpen(false);
+      resetForm();
     } catch (error) {
-      toast.error("Failed to save banner")
+      toast.error("Failed to save banner");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const handleDelete = async (id: string) => {
     try {
-      await api.banners.deleteHeroBanner(id)
-      mutateHero()
-      toast.success("Banner deleted")
+      let deleteFn, mutateFn;
+      if (activeTab === "hero") {
+        deleteFn = bannerService.deleteHeroBanner;
+        mutateFn = mutateHero;
+      } else if (activeTab === "middle") {
+        deleteFn = bannerService.deleteMiddleBanner;
+        mutateFn = mutateMiddle;
+      } else if (activeTab === "bottom") {
+        deleteFn = bannerService.deleteBottomBanner;
+        mutateFn = mutateBottom;
+      } else if (activeTab === "give") {
+        deleteFn = bannerService.deleteGiveBanner;
+        mutateFn = mutateGive;
+      }
+      if (deleteFn) {
+        await deleteFn(id);
+        if (mutateFn) mutateFn();
+        toast.success("Banner deleted");
+      } else {
+        toast.error("Delete function is not defined");
+      }
     } catch (error) {
-      toast.error("Failed to delete banner")
+      toast.error("Failed to delete banner");
     }
-  }
+  };
 
   const toggleActive = async (banner: Banner) => {
     try {
-      const formData = new FormData()
-      formData.append("active", String(!banner.active))
-      await api.banners.updateHeroBanner(banner.id, formData)
-      mutateHero()
-      toast.success("Status updated")
+      const formData = new FormData();
+      formData.append("active", String(!banner.active));
+      formData.append("index", banner.index?.toString() || "");
+      let updateFn, mutateFn;
+      if (activeTab === "hero") {
+        updateFn = bannerService.updateHeroBanner;
+        mutateFn = mutateHero;
+      } else if (activeTab === "middle") {
+        updateFn = bannerService.updateMiddleBanner;
+        mutateFn = mutateMiddle;
+      } else if (activeTab === "bottom") {
+        updateFn = bannerService.updateBottomBanner;
+        mutateFn = mutateBottom;
+      } else if (activeTab === "give") {
+        updateFn = bannerService.updateGiveBanner;
+        mutateFn = mutateGive;
+      }
+      if (updateFn) {
+        await updateFn(banner.id, formData);
+        if (mutateFn) mutateFn();
+        toast.success("Status updated");
+      } else {
+        toast.error("Update function is not defined");
+      }
     } catch {
-      toast.error("Failed to update status")
+      toast.error("Failed to update status");
     }
-  }
+  };
 
   return (
     <div className="flex flex-col gap-6">
@@ -151,8 +241,8 @@ export default function AdminBanners() {
         <Dialog
           open={dialogOpen}
           onOpenChange={(open) => {
-            setDialogOpen(open)
-            if (!open) resetForm()
+            setDialogOpen(open);
+            if (!open) resetForm();
           }}
         >
           <DialogTrigger asChild>
@@ -213,7 +303,20 @@ export default function AdminBanners() {
                     placeholder="/shop"
                   />
                 </div>
-                
+
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="banner-index">Index</Label>
+                  <Input
+                    id="banner-index"
+                    type="number"
+                    value={form.index}
+                    onChange={(e) =>
+                      setForm((f) => ({ ...f, index: e.target.value }))
+                    }
+                    placeholder="Banner order/index"
+                  />
+                </div>
+
                 <div className="flex flex-col gap-2">
                   <Label htmlFor="banner-image">Image</Label>
                   <Input
@@ -240,8 +343,16 @@ export default function AdminBanners() {
                 />
                 <Label htmlFor="banner-active">Active</Label>
               </div>
-              <Button onClick={handleSave} className="w-full" disabled={loading}>
-                {loading ? "Saving..." : editingBanner ? "Update Banner" : "Create Banner"}
+              <Button
+                onClick={handleSave}
+                className="w-full"
+                disabled={loading}
+              >
+                {loading
+                  ? "Saving..."
+                  : editingBanner
+                    ? "Update Banner"
+                    : "Create Banner"}
               </Button>
             </div>
           </DialogContent>
@@ -260,7 +371,7 @@ export default function AdminBanners() {
         {Object.entries(bannerLists).map(([type, banners]) => (
           <TabsContent key={type} value={type}>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {banners.map((banner: Banner) => (
+              {(Array.isArray(banners) ? banners : []).map((banner: Banner) => (
                 <Card key={banner.id} className="overflow-hidden">
                   <div className="relative aspect-video">
                     <Image
@@ -318,14 +429,15 @@ export default function AdminBanners() {
                 </Card>
               ))}
             </div>
-            {banners.length === 0 && (
+            {Array.isArray(banners) && banners.length === 0 && (
               <p className="py-12 text-center text-sm text-muted-foreground">
-                No banners yet. Add a banner to display on the homepage carousel.
+                No banners yet. Add a banner to display on the homepage
+                carousel.
               </p>
             )}
           </TabsContent>
         ))}
       </Tabs>
     </div>
-  )
+  );
 }

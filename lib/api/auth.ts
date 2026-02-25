@@ -1,43 +1,46 @@
-import type { User, LoginCredentials, RegisterData } from "@/lib/types"
-import axiosInstance from "./axios-instance"
+import { apiClient } from '@/lib/api';
+import { API_CONFIG } from '@/lib/config';
+import type { ApiResponse, User, LoginCredentials, RegisterData } from '@/lib/types';
 
-const authApi = {
-  register: (data: RegisterData) =>
-    axiosInstance.post("/auth/register", data).then((res) => {
-      // normalize response shape: prefer res.data.data but fall back to res.data
-      const payload = res.data?.data ?? res.data ?? {}
-      if (payload.accessToken) localStorage.setItem("eid-token", payload.accessToken)
-      return {
-        user: payload.user ?? payload.user,
-        accessToken: payload.accessToken,
-        refreshToken: payload.refreshToken,
-        raw: res.data,
-      }
-    }),
+export class AuthService {
+  async register(data: RegisterData): Promise<any> {
+    const res = await apiClient.post(API_CONFIG.ENDPOINTS.AUTH_REGISTER, data);
+    const payload: { user?: User; accessToken?: string; refreshToken?: string } = res?.data ?? {};
+    if (payload.accessToken) localStorage.setItem('eid-token', payload.accessToken);
+    return {
+      user: payload.user,
+      accessToken: payload.accessToken,
+      refreshToken: payload.refreshToken,
+      raw: res,
+    };
+  }
 
-  login: (credentials: LoginCredentials) =>
-    axiosInstance.post("/auth/login", credentials).then((res) => {
-      const payload = res.data?.data ?? res.data ?? {}
-      if (payload.accessToken) localStorage.setItem("eid-token", payload.accessToken)
-      return {
-        user: payload.user,
-        accessToken: payload.accessToken,
-        refreshToken: payload.refreshToken,
-        raw: res.data,
-      }
-    }),
+  async login(credentials: LoginCredentials): Promise<any> {
+    const res = await apiClient.post(API_CONFIG.ENDPOINTS.AUTH_LOGIN, credentials);
+    const payload: { user?: User; accessToken?: string; refreshToken?: string } = res?.data ?? {};
+    if (payload.accessToken) localStorage.setItem('eid-token', payload.accessToken);
+    return {
+      user: payload.user,
+      accessToken: payload.accessToken,
+      refreshToken: payload.refreshToken,
+      raw: res,
+    };
+  }
 
-  refresh: (refreshToken: string) =>
-    axiosInstance.post("/auth/refresh", { refreshToken }),
+  async refresh(refreshToken: string): Promise<any> {
+    return apiClient.post(API_CONFIG.ENDPOINTS.AUTH_REFRESH, { refreshToken });
+  }
 
-  getProfile: () =>
-    axiosInstance.get("/auth/profile").then(res => res.data),
+  async getProfile(): Promise<ApiResponse<User>> {
+    return apiClient.get<User>(API_CONFIG.ENDPOINTS.AUTH_PROFILE);
+  }
 
-  logout: () => {
-    localStorage.removeItem("eid-token")
-    localStorage.removeItem("eid-current-user")
-    return axiosInstance.post("/auth/logout")
-  },
+  async logout(): Promise<any> {
+    localStorage.removeItem('eid-token');
+    localStorage.removeItem('eid-current-user');
+    return apiClient.post(API_CONFIG.ENDPOINTS.AUTH_LOGOUT);
+  }
 }
 
-export default authApi
+export const authService = new AuthService();
+export default AuthService;

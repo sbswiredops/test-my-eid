@@ -1,3 +1,58 @@
+// Category creation request
+export interface CreateCategoryRequest {
+  name: string;
+  description?: string;
+  image?: File | string;
+  slug?: string;
+  featured?: boolean;
+  status?: string;
+  parentId?: string;
+  icon?: File | string;
+  order?: number;
+}
+
+// Category update request
+export interface UpdateCategoryRequest extends Partial<CreateCategoryRequest> { }
+
+// Product creation request
+export interface CreateProductRequest {
+  name: string;
+  description?: string;
+  price: number;
+  originalPrice?: number;
+  images?: (File | string)[];
+  category: string;
+  sizes?: string[];
+  stockPerSize?: Record<string, number>;
+  featured?: boolean;
+  tags?: string[];
+}
+
+// Product update request
+export interface UpdateProductRequest extends Partial<CreateProductRequest> { }
+
+// Pagination query
+export interface PaginationQuery {
+  page?: number;
+  limit?: number;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
+}
+// Generic API error type
+export interface ApiError {
+  code: string;
+  message: string;
+  details?: any;
+}
+
+// Generic API response type
+export interface ApiResponse<T = any> {
+  success: boolean;
+  data?: T;
+  message?: string;
+  error?: string;
+  meta?: any;
+}
 export interface Product {
   id: string
   name: string
@@ -30,6 +85,7 @@ export interface Banner {
   ctaLink: string
   image: string
   active: boolean
+  index?: number
 }
 
 export interface CartItem {

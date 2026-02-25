@@ -1,46 +1,58 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { products as staticProducts, categories as staticCategories, formatPrice } from "@/lib/data"
-import { useProducts, useCategories } from "@/hooks/use-api"
-import api from "@/lib/api"
-import type { Product } from "@/lib/types"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
+import { useState } from "react";
+import {
+  products as staticProducts,
+  categories as staticCategories,
+  formatPrice,
+} from "@/lib/data";
+import { useProducts, useCategories } from "@/hooks/use-api";
+import { productService } from "@/lib/api/products";
+import type { Product } from "@/lib/types";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
+} from "@/components/ui/select";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog"
-import { Plus, Pencil, Trash2, Search } from "lucide-react"
-import Image from "next/image"
-import { toast } from "sonner"
+} from "@/components/ui/dialog";
+import { Plus, Pencil, Trash2, Search } from "lucide-react";
+import Image from "next/image";
+import { toast } from "sonner";
 
 export default function AdminProducts() {
-  const { data: productsData, mutate: mutateProducts, isLoading: loadingProducts } = useProducts()
-  const { data: categoriesData } = useCategories()
-  const productsList = productsData || staticProducts
-  const categories = categoriesData || staticCategories
+  const {
+    data: productsData,
+    mutate: mutateProducts,
+    isLoading: loadingProducts,
+  } = useProducts();
+  const { data: categoriesData } = useCategories();
+  const productsList = Array.isArray(productsData)
+    ? productsData
+    : staticProducts;
+  const categories = Array.isArray(categoriesData)
+    ? categoriesData
+    : staticCategories;
 
-  const [search, setSearch] = useState("")
-  const [filterCategory, setFilterCategory] = useState("all")
-  const [dialogOpen, setDialogOpen] = useState(false)
-  const [editingProduct, setEditingProduct] = useState<Product | null>(null)
-  const [loading, setLoading] = useState(false)
-  const [selectedImages, setSelectedImages] = useState<FileList | null>(null)
+  const [search, setSearch] = useState("");
+  const [filterCategory, setFilterCategory] = useState("all");
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [selectedImages, setSelectedImages] = useState<FileList | null>(null);
 
   // Form state
   const [form, setForm] = useState({
@@ -52,7 +64,7 @@ export default function AdminProducts() {
     sizes: "",
     featured: false,
     tags: "",
-  })
+  });
 
   const resetForm = () => {
     setForm({
@@ -64,13 +76,13 @@ export default function AdminProducts() {
       sizes: "",
       featured: false,
       tags: "",
-    })
-    setEditingProduct(null)
-    setSelectedImages(null)
-  }
+    });
+    setEditingProduct(null);
+    setSelectedImages(null);
+  };
 
   const openEdit = (product: Product) => {
-    setEditingProduct(product)
+    setEditingProduct(product);
     setForm({
       name: product.name,
       description: product.description,
@@ -80,73 +92,73 @@ export default function AdminProducts() {
       sizes: product.sizes.join(", "),
       featured: product.featured,
       tags: product.tags.join(", "),
-    })
-    setDialogOpen(true)
-  }
+    });
+    setDialogOpen(true);
+  };
 
   const handleSave = async () => {
     if (!form.name || !form.price || !form.category) {
-      toast.error("Please fill in required fields")
-      return
+      toast.error("Please fill in required fields");
+      return;
     }
 
-    setLoading(true)
+    setLoading(true);
     try {
       const sizes = form.sizes
         .split(",")
         .map((s) => s.trim())
-        .filter(Boolean)
+        .filter(Boolean);
 
-      const formData = new FormData()
-      formData.append("name", form.name)
-      formData.append("description", form.description)
-      formData.append("price", form.price)
-      formData.append("originalPrice", form.originalPrice)
-      formData.append("category", form.category)
-      formData.append("sizes", JSON.stringify(sizes))
-      formData.append("featured", String(form.featured))
-      formData.append("tags", form.tags)
+      const formData = new FormData();
+      formData.append("name", form.name);
+      formData.append("description", form.description);
+      formData.append("price", form.price);
+      formData.append("originalPrice", form.originalPrice);
+      formData.append("category", form.category);
+      formData.append("sizes", JSON.stringify(sizes));
+      formData.append("featured", String(form.featured));
+      formData.append("tags", form.tags);
 
       if (selectedImages) {
         for (let i = 0; i < selectedImages.length; i++) {
-          formData.append("images", selectedImages[i])
+          formData.append("images", selectedImages[i]);
         }
       }
 
       if (editingProduct) {
-        await api.products.update(editingProduct.id, formData)
-        toast.success("Product updated successfully")
+        await productService.update(editingProduct.id, formData);
+        toast.success("Product updated successfully");
       } else {
-        await api.products.create(formData)
-        toast.success("Product created successfully")
+        await productService.create(formData);
+        toast.success("Product created successfully");
       }
 
-      mutateProducts()
-      setDialogOpen(false)
-      resetForm()
+      mutateProducts();
+      setDialogOpen(false);
+      resetForm();
     } catch (error) {
-      toast.error("Failed to save product")
+      toast.error("Failed to save product");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const handleDelete = async (id: string) => {
     try {
-      await api.products.delete(id)
-      mutateProducts()
-      toast.success("Product deleted")
+      await productService.delete(id);
+      mutateProducts();
+      toast.success("Product deleted");
     } catch (error) {
-      toast.error("Failed to delete product")
+      toast.error("Failed to delete product");
     }
-  }
+  };
 
   const filtered = productsList.filter((p: Product) => {
-    const matchesSearch = p.name.toLowerCase().includes(search.toLowerCase())
+    const matchesSearch = p.name.toLowerCase().includes(search.toLowerCase());
     const matchesCategory =
-      filterCategory === "all" || p.category === filterCategory
-    return matchesSearch && matchesCategory
-  })
+      filterCategory === "all" || p.category === filterCategory;
+    return matchesSearch && matchesCategory;
+  });
 
   return (
     <div className="flex flex-col gap-6">
@@ -162,8 +174,8 @@ export default function AdminProducts() {
         <Dialog
           open={dialogOpen}
           onOpenChange={(open) => {
-            setDialogOpen(open)
-            if (!open) resetForm()
+            setDialogOpen(open);
+            if (!open) resetForm();
           }}
         >
           <DialogTrigger asChild>
@@ -252,9 +264,7 @@ export default function AdminProducts() {
                 </Select>
               </div>
               <div className="flex flex-col gap-2">
-                <Label htmlFor="sizes">
-                  Sizes (comma-separated)
-                </Label>
+                <Label htmlFor="sizes">Sizes (comma-separated)</Label>
                 <Input
                   id="sizes"
                   value={form.sizes}
@@ -300,8 +310,16 @@ export default function AdminProducts() {
                 />
                 <Label htmlFor="featured">Featured product</Label>
               </div>
-              <Button onClick={handleSave} className="w-full" disabled={loading}>
-                {loading ? "Saving..." : editingProduct ? "Update Product" : "Create Product"}
+              <Button
+                onClick={handleSave}
+                className="w-full"
+                disabled={loading}
+              >
+                {loading
+                  ? "Saving..."
+                  : editingProduct
+                    ? "Update Product"
+                    : "Create Product"}
               </Button>
             </div>
           </DialogContent>
@@ -440,5 +458,5 @@ export default function AdminProducts() {
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

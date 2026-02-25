@@ -1,16 +1,16 @@
-"use client"
+"use client";
 
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { ProductCard } from "@/components/product-card"
-import { HeroBanner } from "@/components/hero-banner"
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { ProductCard } from "@/components/product-card";
+import { HeroBanner } from "@/components/hero-banner";
 import {
   categories as staticCategories,
   getFeaturedProducts,
   products as staticProducts,
-} from "@/lib/data"
-import { useProducts, useCategories } from "@/hooks/use-api"
-import { Truck, Shield, RotateCcw, Phone } from "lucide-react"
+} from "@/lib/data";
+import { useProducts, useCategories } from "@/hooks/use-api";
+import { Truck, Shield, RotateCcw, Phone } from "lucide-react";
 
 const features = [
   {
@@ -33,22 +33,28 @@ const features = [
     title: "24/7 Support",
     description: "Call us anytime",
   },
-]
+];
 
 export default function HomePage() {
-  const { data: productsData } = useProducts()
-  const { data: categoriesData } = useCategories()
+  const { data: productsData } = useProducts();
+  const { data: categoriesData } = useCategories();
 
-  const categories = categoriesData || staticCategories
-  const products = productsData || staticProducts
+  const categories = Array.isArray(categoriesData)
+    ? categoriesData
+    : staticCategories;
+  const products = Array.isArray(productsData) ? productsData : staticProducts;
 
-  const featured = products.filter((p: any) => p.featured)
-  const newArrivals = [...products]
-    .sort(
-      (a, b) =>
-        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-    )
-    .slice(0, 4)
+  const featured = Array.isArray(products)
+    ? products.filter((p: any) => p.featured)
+    : [];
+  const newArrivals = Array.isArray(products)
+    ? [...products]
+        .sort(
+          (a, b) =>
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+        )
+        .slice(0, 4)
+    : [];
 
   return (
     <div className="flex flex-col">
@@ -104,9 +110,7 @@ export default function HomePage() {
                 <h3 className="text-center font-serif text-lg font-bold text-white sm:text-xl">
                   {cat.name}
                 </h3>
-                <p className="mt-1 text-xs text-white/80">
-                  Shop Now
-                </p>
+                <p className="mt-1 text-xs text-white/80">Shop Now</p>
               </div>
             </Link>
           ))}
@@ -130,7 +134,7 @@ export default function HomePage() {
             </Button>
           </div>
           <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
-            {featured.map((product) => (
+            {featured.map((product: any) => (
               <ProductCard key={product.id} product={product} />
             ))}
           </div>
@@ -159,12 +163,7 @@ export default function HomePage() {
             Celebrate this blessed occasion with our exclusive collection at
             unbeatable prices. Free delivery on orders above BDT. 5,000.
           </p>
-          <Button
-            variant="secondary"
-            size="lg"
-            className="mt-6"
-            asChild
-          >
+          <Button variant="secondary" size="lg" className="mt-6" asChild>
             <Link href="/shop">Shop the Sale</Link>
           </Button>
         </div>
@@ -192,5 +191,5 @@ export default function HomePage() {
         </div>
       </section>
     </div>
-  )
+  );
 }

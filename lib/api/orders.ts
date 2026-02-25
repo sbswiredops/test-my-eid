@@ -1,32 +1,44 @@
-import axiosInstance from "./axios-instance"
+import { apiClient } from '@/lib/api';
+import { API_CONFIG } from '@/lib/config';
+import { ApiResponse, Order } from '@/lib/types';
 
-const ordersApi = {
-  create: (data: any) => 
-    axiosInstance.post("/orders", data).then(res => res.data),
-  
-  getAll: () => 
-    axiosInstance.get("/orders").then(res => res.data),
-  
-  getMyOrders: () => 
-    axiosInstance.get("/orders/my").then(res => res.data),
-  
-  getMyStats: () => 
-    axiosInstance.get("/orders/my/stats").then(res => res.data),
-  
-  getById: (id: string) => 
-    axiosInstance.get(`/orders/${id}`).then(res => res.data),
-  
-  getByOrderId: (orderId: string) => 
-    axiosInstance.get(`/orders/order-id/${orderId}`).then(res => res.data),
-  
-  updateStatus: (id: string, status: string) => 
-    axiosInstance.patch(`/orders/${id}/status`, { status }).then(res => res.data),
-  
-  cancel: (id: string) => 
-    axiosInstance.post(`/orders/${id}/cancel`).then(res => res.data),
-  
-  getDashboardStats: () => 
-    axiosInstance.get("/admin/dashboard").then(res => res.data),
+export class OrderService {
+  async create(data: any): Promise<ApiResponse<Order>> {
+    return apiClient.post<Order>(API_CONFIG.ENDPOINTS.ORDERS_CREATE, data);
+  }
+
+  async getAll(): Promise<ApiResponse<Order[]>> {
+    return apiClient.get<Order[]>(API_CONFIG.ENDPOINTS.ORDERS);
+  }
+
+  async getMyOrders(): Promise<ApiResponse<Order[]>> {
+    return apiClient.get<Order[]>(API_CONFIG.ENDPOINTS.ORDERS_MY);
+  }
+
+  async getMyStats(): Promise<ApiResponse<any>> {
+    return apiClient.get<any>(API_CONFIG.ENDPOINTS.ORDERS_MY_STATS);
+  }
+
+  async getById(id: string): Promise<ApiResponse<Order>> {
+    return apiClient.get<Order>(API_CONFIG.ENDPOINTS.ORDER_BY_ID(id));
+  }
+
+  async getByOrderId(orderId: string): Promise<ApiResponse<Order>> {
+    return apiClient.get<Order>(API_CONFIG.ENDPOINTS.ORDER_BY_ORDER_ID(orderId));
+  }
+
+  async updateStatus(id: string, status: string): Promise<ApiResponse<Order>> {
+    return apiClient.patch<Order>(API_CONFIG.ENDPOINTS.ORDER_UPDATE_STATUS(id), { status });
+  }
+
+  async cancel(id: string): Promise<ApiResponse<Order>> {
+    return apiClient.post<Order>(API_CONFIG.ENDPOINTS.ORDER_CANCEL(id));
+  }
+
+  async getDashboardStats(): Promise<ApiResponse<any>> {
+    return apiClient.get<any>(API_CONFIG.ENDPOINTS.ADMIN_DASHBOARD);
+  }
 }
 
-export default ordersApi
+export const orderService = new OrderService();
+export default OrderService;

@@ -8,7 +8,9 @@ import {
   type ReactNode,
 } from "react";
 import type { User } from "@/lib/types";
-import api from "@/lib/api";
+import { authService } from "@/lib/api/auth";
+
+// Ensure api.auth refers to the instance, not the class
 
 interface AuthContextType {
   user: Omit<User, "password"> | null;
@@ -25,8 +27,6 @@ interface AuthContextType {
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
-
-const ADMIN_EMAIL = "admin@eidcollection.pk";
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<Omit<User, "password"> | null>(null);
@@ -45,39 +45,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = async (email: string, password: string) => {
     try {
-      const resp: any = await api.auth.login({ email, password });
-
-      // support multiple shapes: { user, accessToken } or { data: { user, accessToken } } or normalized resp
+      const response = await authService.login({ email, password });
       const userData =
-        resp?.user ??
-        resp?.data?.user ??
-        resp?.raw?.data?.user ??
-        resp?.raw?.user;
+        response?.user ?? response?.data?.user ?? response?.raw?.data?.user;
       const accessToken =
-        resp?.accessToken ??
-        resp?.data?.accessToken ??
-        resp?.raw?.data?.accessToken ??
-        resp?.raw?.accessToken;
-
-      if (!userData) {
-        return {
-          success: false,
-          error:
-            resp?.raw?.message ?? resp?.message ?? "Invalid email or password",
-        };
+        response?.accessToken ??
+        response?.data?.accessToken ??
+        response?.raw?.data?.accessToken;
+      if (userData) {
+        setUser(userData);
+        localStorage.setItem("eid-current-user", JSON.stringify(userData));
+        if (accessToken) localStorage.setItem("eid-token", accessToken);
+        return { success: true };
+      } else {
+        // Try to extract error message
+        const errorMsg =
+          response?.raw?.data?.error ||
+          response?.raw?.data?.message ||
+          response?.raw?.message ||
+          "Login failed";
+        return { success: false, error: errorMsg };
       }
-      setUser(userData);
-      localStorage.setItem("eid-current-user", JSON.stringify(userData));
-      if (accessToken) localStorage.setItem("eid-token", accessToken);
-      return { success: true };
-    } catch (error: any) {
-      return {
-        success: false,
-        error:
-          error.response?.data?.message ||
-          error.message ||
-          "Invalid email or password",
-      };
+    } catch (err) {
+      return { success: false, error: "Unexpected error, please try again." };
     }
   };
 
@@ -89,7 +79,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } as any;
       if (payloadAny.address === "") delete payloadAny.address;
       if (payloadAny.district === "") delete payloadAny.district;
-      const response = await api.auth.register(payloadAny as any);
+      const response = await authService.register(payloadAny as any);
       // response may be normalized or wrapped
       const resp: any = response || {};
       let userData = resp?.user ?? resp?.data?.user ?? resp?.raw?.data?.user;
@@ -105,7 +95,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         payloadAny.password
       ) {
         try {
-          const loginRes: any = await api.auth.login({
+          const loginRes: any = await authService.login({
             email: payloadAny.email,
             password: payloadAny.password,
           });
@@ -146,7 +136,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const logout = () => {
-    api.auth.logout().catch(() => {});
+    authService.logout().catch(() => {});
     setUser(null);
     localStorage.removeItem("eid-current-user");
     localStorage.removeItem("eid-token");
@@ -155,22 +145,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const updateProfile = async (data: Partial<User>) => {
     if (!user) return;
     try {
-      // Assuming a /users/profile endpoint exists as per docs
-      const res = await api.auth.getProfile(); // just example to check profile
-      // In reality we should use api.users.updateProfile if we added it
-
+      const res = await authService.getProfile(); // just example to check profile
       const updated = { ...user, ...data };
       setUser(updated);
       localStorage.setItem("eid-current-user", JSON.stringify(updated));
-      // No mock user storage update
-    } catch {
+    } catch (error) {
       const updated = { ...user, ...data };
       setUser(updated);
       localStorage.setItem("eid-current-user", JSON.stringify(updated));
     }
   };
 
-  const isAdmin = user?.role === "ADMIN" || user?.email === ADMIN_EMAIL;
+  const isAdmin = user?.role === "ADMIN";
 
   return (
     <AuthContext.Provider

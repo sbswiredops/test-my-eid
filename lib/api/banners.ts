@@ -1,36 +1,77 @@
-import axiosInstance from "./axios-instance"
+import { apiClient } from '@/lib/api';
+import { API_CONFIG } from '@/lib/config';
+import { ApiResponse, Banner } from '@/lib/types';
 
-const bannersApi = {
-  getHeroBanners: () => 
-    axiosInstance.get("/herobanner").then(res => res.data),
-  
-  createHeroBanner: (data: FormData) =>
-    axiosInstance.post("/herobanner", data, {
-      headers: { "Content-Type": "multipart/form-data" },
-    }).then(res => res.data),
+export class BannerService {
+  // Hero Banners
+  async getHeroBanners(): Promise<ApiResponse<Banner[]>> {
+    return apiClient.get<Banner[]>(API_CONFIG.ENDPOINTS.HEROBANNER);
+  }
 
-  updateHeroBanner: (id: string, data: FormData) =>
-    axiosInstance.put(`/herobanner/${id}`, data, {
-      headers: { "Content-Type": "multipart/form-data" },
-    }).then(res => res.data),
+  async createHeroBanner(data: FormData): Promise<ApiResponse<Banner>> {
+    return apiClient.upload<Banner>(API_CONFIG.ENDPOINTS.HEROBANNER_CREATE, data);
+  }
 
-  deleteHeroBanner: (id: string) =>
-    axiosInstance.delete(`/herobanner/${id}`).then(res => res.data),
+  async updateHeroBanner(id: string, data: FormData): Promise<ApiResponse<Banner>> {
+    // Use upload helper to ensure multipart XHR upload (better compatibility)
+    return apiClient.upload<Banner>(API_CONFIG.ENDPOINTS.HEROBANNER_UPDATE(id), data);
+  }
 
-  getBottomBanners: () => 
-    axiosInstance.get("/herobanner/bottom").then(res => res.data),
-  
-  createBottomBanner: (data: FormData) => 
-    axiosInstance.post("/herobanner/bottom", data, {
-      headers: { "Content-Type": "multipart/form-data" },
-    }).then(res => res.data),
-  
-  // Similarly for middle, give
-  getMiddleBanners: () => 
-    axiosInstance.get("/herobanner/middle").then(res => res.data),
-  
-  getGiveBanners: () => 
-    axiosInstance.get("/herobanner/give").then(res => res.data),
+  async deleteHeroBanner(id: string): Promise<ApiResponse<null>> {
+    return apiClient.delete(API_CONFIG.ENDPOINTS.HEROBANNER_DELETE(id));
+  }
+
+  // Bottom Banners
+  async getBottomBanners(): Promise<ApiResponse<Banner[]>> {
+    return apiClient.get<Banner[]>(API_CONFIG.ENDPOINTS.HEROBANNER_BOTTOM);
+  }
+
+  async createBottomBanner(data: FormData): Promise<ApiResponse<Banner>> {
+    return apiClient.upload<Banner>(API_CONFIG.ENDPOINTS.HEROBANNER_BOTTOM_CREATE, data);
+  }
+
+  async updateBottomBanner(id: string, data: FormData): Promise<ApiResponse<Banner>> {
+    return apiClient.upload<Banner>(API_CONFIG.ENDPOINTS.HEROBANNER_BOTTOM_UPDATE(id), data);
+  }
+
+  async deleteBottomBanner(id: string): Promise<ApiResponse<null>> {
+    return apiClient.delete(API_CONFIG.ENDPOINTS.HEROBANNER_BOTTOM_DELETE(id));
+  }
+
+  // Middle Banners
+  async getMiddleBanners(): Promise<ApiResponse<Banner[]>> {
+    return apiClient.get<Banner[]>(API_CONFIG.ENDPOINTS.HEROBANNER_MIDDLE);
+  }
+
+  async createMiddleBanner(data: FormData): Promise<ApiResponse<Banner>> {
+    return apiClient.upload<Banner>(API_CONFIG.ENDPOINTS.HEROBANNER_MIDDLE_CREATE, data);
+  }
+
+  async updateMiddleBanner(id: string, data: FormData): Promise<ApiResponse<Banner>> {
+    return apiClient.upload<Banner>(API_CONFIG.ENDPOINTS.HEROBANNER_MIDDLE_UPDATE(id), data);
+  }
+
+  async deleteMiddleBanner(id: string): Promise<ApiResponse<null>> {
+    return apiClient.delete(API_CONFIG.ENDPOINTS.HEROBANNER_MIDDLE_DELETE(id));
+  }
+
+  // Give Banners
+  async getGiveBanners(): Promise<ApiResponse<Banner[]>> {
+    return apiClient.get<Banner[]>(API_CONFIG.ENDPOINTS.HEROBANNER_GIVE);
+  }
+
+  async createGiveBanner(data: FormData): Promise<ApiResponse<Banner>> {
+    return apiClient.upload<Banner>(API_CONFIG.ENDPOINTS.HEROBANNER_GIVE_CREATE, data);
+  }
+
+  async updateGiveBanner(id: string, data: FormData): Promise<ApiResponse<Banner>> {
+    return apiClient.upload<Banner>(API_CONFIG.ENDPOINTS.HEROBANNER_GIVE_UPDATE(id), data);
+  }
+
+  async deleteGiveBanner(id: string): Promise<ApiResponse<null>> {
+    return apiClient.delete(API_CONFIG.ENDPOINTS.HEROBANNER_GIVE_DELETE(id));
+  }
 }
 
-export default bannersApi
+export const bannerService = new BannerService();
+export default BannerService;

@@ -1,29 +1,42 @@
-import axiosInstance from "./axios-instance"
-import type { Product } from "@/lib/types"
+import { apiClient } from '@/lib/api';
+import { API_CONFIG } from '@/lib/config';
+import type { ApiResponse, Product } from '@/lib/types';
 
-const productsApi = {
-  getAll: (params?: any) => 
-    axiosInstance.get("/products", { params }).then(res => res.data),
-  
-  getById: (id: string) => 
-    axiosInstance.get(`/products/${id}`).then(res => res.data),
-  
-  getBySlug: (slug: string) => 
-    axiosInstance.get(`/products/slug/${slug}`).then(res => res.data),
-  
-  create: (data: FormData) => 
-    axiosInstance.post("/products", data, {
-      headers: { "Content-Type": "multipart/form-data" },
-    }).then(res => res.data),
-  
-  update: (id: string, data: any) => 
-    axiosInstance.patch(`/products/${id}`, data).then(res => res.data),
-  
-  delete: (id: string) => 
-    axiosInstance.delete(`/products/${id}`).then(res => res.data),
+export class ProductService {
+  async getAll(params?: Record<string, any>): Promise<ApiResponse<Product[]>> {
+    return apiClient.get<Product[]>(API_CONFIG.ENDPOINTS.PRODUCTS, params);
+  }
 
-  getLowStock: () => 
-    axiosInstance.get("/admin/products/low-stock").then(res => res.data),
+  async getById(id: string): Promise<ApiResponse<Product>> {
+    return apiClient.get<Product>(API_CONFIG.ENDPOINTS.PRODUCT_BY_ID(id));
+  }
+
+  async getBySlug(slug: string): Promise<ApiResponse<Product>> {
+    return apiClient.get<Product>(API_CONFIG.ENDPOINTS.PRODUCT_BY_SLUG(slug));
+  }
+
+  async create(data: FormData | Record<string, any>): Promise<ApiResponse<Product>> {
+    if (typeof FormData !== 'undefined' && data instanceof FormData) {
+      return apiClient.post<Product>(API_CONFIG.ENDPOINTS.PRODUCTS_CREATE, data);
+    }
+    return apiClient.post<Product>(API_CONFIG.ENDPOINTS.PRODUCTS_CREATE, data);
+  }
+
+  async update(id: string, data: FormData | Record<string, any>): Promise<ApiResponse<Product>> {
+    if (typeof FormData !== 'undefined' && data instanceof FormData) {
+      return apiClient.patch<Product>(API_CONFIG.ENDPOINTS.PRODUCT_UPDATE(id), data);
+    }
+    return apiClient.patch<Product>(API_CONFIG.ENDPOINTS.PRODUCT_UPDATE(id), data);
+  }
+
+  async delete(id: string): Promise<ApiResponse<null>> {
+    return apiClient.delete(API_CONFIG.ENDPOINTS.PRODUCT_DELETE(id));
+  }
+
+  async getLowStock(): Promise<ApiResponse<Product[]>> {
+    return apiClient.get<Product[]>(API_CONFIG.ENDPOINTS.ADMIN_LOW_STOCK_PRODUCTS);
+  }
 }
 
-export default productsApi
+export const productService = new ProductService();
+export default ProductService;
