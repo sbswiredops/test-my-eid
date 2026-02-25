@@ -1,8 +1,14 @@
 import useSWR from "swr"
 import type { SWRConfiguration } from "swr"
-import axiosInstance from "@/lib/api/axios-instance"
+import { apiClient } from "../lib/api"
 
-const fetcher = (url: string) => axiosInstance.get(url).then((res) => res.data)
+const fetcher = async (url: string) => {
+  const res = await apiClient.get<any>(url)
+  if (!res || !res.success) {
+    throw new Error(res?.message || 'API error')
+  }
+  return res.data
+}
 
 export function useApi<T>(url: string | null, config?: SWRConfiguration) {
   return useSWR<T>(url, fetcher, {
@@ -30,6 +36,19 @@ export function useCategories() {
 // Banners hooks
 export function useHeroBanners() {
   return useApi<any[]>("/herobanner")
+}
+
+// Additional banner hooks
+export function useMiddleBanners() {
+  return useApi<any[]>("/herobanner/middle")
+}
+
+export function useBottomBanners() {
+  return useApi<any[]>("/herobanner/bottom")
+}
+
+export function useGiveBanners() {
+  return useApi<any[]>("/herobanner/give")
 }
 
 // Admin hooks

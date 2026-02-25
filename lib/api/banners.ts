@@ -71,6 +71,23 @@ export class BannerService {
   async deleteGiveBanner(id: string): Promise<ApiResponse<null>> {
     return apiClient.delete(API_CONFIG.ENDPOINTS.HEROBANNER_GIVE_DELETE(id));
   }
+
+  // Active toggles
+  async setHeroBannerActive(id: string, active: boolean): Promise<ApiResponse<Banner>> {
+    return apiClient.put<Banner>(API_CONFIG.ENDPOINTS.HEROBANNER_SET_ACTIVE(id), { active });
+  }
+
+  async setBottomBannerActive(id: string, active: boolean): Promise<ApiResponse<Banner>> {
+    return apiClient.put<Banner>(API_CONFIG.ENDPOINTS.HEROBANNER_BOTTOM_SET_ACTIVE(id), { active });
+  }
+
+  async setMiddleBannerActive(id: string, active: boolean): Promise<ApiResponse<Banner>> {
+    return apiClient.put<Banner>(API_CONFIG.ENDPOINTS.HEROBANNER_MIDDLE_SET_ACTIVE(id), { active });
+  }
+
+  async setGiveBannerActive(id: string, active: boolean): Promise<ApiResponse<Banner>> {
+    return apiClient.put<Banner>(API_CONFIG.ENDPOINTS.HEROBANNER_GIVE_SET_ACTIVE(id), { active });
+  }
 }
 
 export const bannerService = new BannerService();

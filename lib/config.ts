@@ -92,6 +92,12 @@ export const API_CONFIG = {
     HEROBANNER_UPDATE: (id: string) => `/herobanner/${id}`, // PUT
     HEROBANNER_DELETE: (id: string) => `/herobanner/${id}`, // DELETE
 
+    // Herobanner Active toggles (PUT)
+    HEROBANNER_SET_ACTIVE: (id: string) => `/herobanner/${id}/active`, // PUT
+    HEROBANNER_BOTTOM_SET_ACTIVE: (id: string) => `/herobanner/bottom/${id}/active`, // PUT
+    HEROBANNER_MIDDLE_SET_ACTIVE: (id: string) => `/herobanner/middle/${id}/active`, // PUT
+    HEROBANNER_GIVE_SET_ACTIVE: (id: string) => `/herobanner/give/${id}/active`, // PUT
+
     // Herobanner Bottom (5 endpoints)
     HEROBANNER_BOTTOM_CREATE: '/herobanner/bottom', // POST
     HEROBANNER_BOTTOM: '/herobanner/bottom', // GET

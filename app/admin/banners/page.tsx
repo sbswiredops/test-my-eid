@@ -3,7 +3,12 @@
 import { useState } from "react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { banners as staticBanners } from "@/lib/data";
-import { useHeroBanners } from "@/hooks/use-api";
+import {
+  useHeroBanners,
+  useMiddleBanners,
+  useBottomBanners,
+  useGiveBanners,
+} from "@/hooks/use-api";
 import { bannerService } from "@/lib/api/banners";
 import type { Banner } from "@/lib/types";
 import { Card, CardContent } from "@/components/ui/card";
@@ -34,36 +39,44 @@ export default function AdminBanners() {
     : heroBanners && Array.isArray((heroBanners as { data?: Banner[] })?.data)
       ? (heroBanners as { data: Banner[] }).data
       : null;
-  // TODO: Replace with real hooks for other banner types
-  const { data: middleBanners, mutate: mutateMiddle } = {
-    data: [],
-    mutate: () => {},
-  };
-  const { data: bottomBanners, mutate: mutateBottom } = {
-    data: [],
-    mutate: () => {},
-  };
-  const { data: giveBanners, mutate: mutateGive } = {
-    data: [],
-    mutate: () => {},
-  };
+  const { data: middleBanners, mutate: mutateMiddle } = useMiddleBanners();
+  const middleList = Array.isArray(middleBanners)
+    ? middleBanners
+    : middleBanners &&
+        Array.isArray((middleBanners as { data?: Banner[] })?.data)
+      ? (middleBanners as { data: Banner[] }).data
+      : null;
+
+  const { data: bottomBanners, mutate: mutateBottom } = useBottomBanners();
+  const bottomList = Array.isArray(bottomBanners)
+    ? bottomBanners
+    : bottomBanners &&
+        Array.isArray((bottomBanners as { data?: Banner[] })?.data)
+      ? (bottomBanners as { data: Banner[] }).data
+      : null;
+
+  const { data: giveBanners, mutate: mutateGive } = useGiveBanners();
+  const giveList = Array.isArray(giveBanners)
+    ? giveBanners
+    : giveBanners && Array.isArray((giveBanners as { data?: Banner[] })?.data)
+      ? (giveBanners as { data: Banner[] }).data
+      : null;
 
   const normalize = (item: any) => ({ ...item, image: item.image || item.img });
 
+  // Ensure each list is always an array to simplify rendering and improve
+  // responsiveness on small screens (avoid rendering null/objects)
   const bannerLists = {
     hero: Array.isArray(heroList) ? heroList.map(normalize) : staticBanners,
-    middle: Array.isArray(middleBanners)
-      ? middleBanners.map(normalize)
-      : middleBanners,
-    bottom: Array.isArray(bottomBanners)
-      ? bottomBanners.map(normalize)
-      : bottomBanners,
-    give: Array.isArray(giveBanners) ? giveBanners.map(normalize) : giveBanners,
+    middle: Array.isArray(middleList) ? middleList.map(normalize) : [],
+    bottom: Array.isArray(bottomList) ? bottomList.map(normalize) : [],
+    give: Array.isArray(giveList) ? giveList.map(normalize) : [],
   };
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingBanner, setEditingBanner] = useState<Banner | null>(null);
   const [loading, setLoading] = useState(false);
+  const [toggling, setToggling] = useState<Record<string, boolean>>({});
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   const [form, setForm] = useState({
@@ -197,38 +210,75 @@ export default function AdminBanners() {
   };
 
   const toggleActive = async (banner: Banner) => {
+    const id = banner.id;
+    const newActive = !banner.active;
+    let toggleFn: ((id: string, active: boolean) => Promise<any>) | undefined;
+    let mutateFn:
+      | ((data?: any, shouldRevalidate?: boolean) => Promise<any>)
+      | undefined;
+
+    if (activeTab === "hero") {
+      toggleFn = bannerService.setHeroBannerActive;
+      mutateFn = mutateHero;
+    } else if (activeTab === "middle") {
+      toggleFn = bannerService.setMiddleBannerActive;
+      mutateFn = mutateMiddle;
+    } else if (activeTab === "bottom") {
+      toggleFn = bannerService.setBottomBannerActive;
+      mutateFn = mutateBottom;
+    } else if (activeTab === "give") {
+      toggleFn = bannerService.setGiveBannerActive;
+      mutateFn = mutateGive;
+    }
+
+    if (!toggleFn || !mutateFn) {
+      toast.error("Toggle function is not defined");
+      return;
+    }
+
+    // optimistic UI: set toggling state and update local cache
+    setToggling((s) => ({ ...s, [id]: true }));
+
+    // capture previous snapshot (for revert)
+    let previous: any = undefined;
     try {
-      const formData = new FormData();
-      formData.append("active", String(!banner.active));
-      formData.append("index", banner.index?.toString() || "");
-      let updateFn, mutateFn;
-      if (activeTab === "hero") {
-        updateFn = bannerService.updateHeroBanner;
-        mutateFn = mutateHero;
-      } else if (activeTab === "middle") {
-        updateFn = bannerService.updateMiddleBanner;
-        mutateFn = mutateMiddle;
-      } else if (activeTab === "bottom") {
-        updateFn = bannerService.updateBottomBanner;
-        mutateFn = mutateBottom;
-      } else if (activeTab === "give") {
-        updateFn = bannerService.updateGiveBanner;
-        mutateFn = mutateGive;
-      }
-      if (updateFn) {
-        await updateFn(banner.id, formData);
-        if (mutateFn) mutateFn();
-        toast.success("Status updated");
-      } else {
-        toast.error("Update function is not defined");
-      }
+      previous = await mutateFn();
     } catch {
+      previous = undefined;
+    }
+
+    // Apply optimistic update (without revalidation)
+    await mutateFn((curr: any) => {
+      if (!curr) return curr;
+      return Array.isArray(curr)
+        ? curr.map((b: Banner) =>
+            b.id === id ? { ...b, active: newActive } : b,
+          )
+        : curr;
+    }, false as any);
+
+    try {
+      await toggleFn(id, newActive);
+      // revalidate to get authoritative data
+      await mutateFn();
+      toast.success("Status updated");
+    } catch (err) {
+      // revert optimistic change
+      if (previous !== undefined) {
+        await mutateFn(previous, false as any);
+      }
       toast.error("Failed to update status");
+    } finally {
+      setToggling((s) => {
+        const copy = { ...s };
+        delete copy[id];
+        return copy;
+      });
     }
   };
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-6 overflow-x-hidden min-w-0">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="font-serif text-2xl font-bold text-foreground">
@@ -361,80 +411,93 @@ export default function AdminBanners() {
 
       {/* Tabs for banner types */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList>
-          <TabsTrigger value="hero">Hero Banner</TabsTrigger>
-          <TabsTrigger value="middle">Middle Banner</TabsTrigger>
-          <TabsTrigger value="bottom">Bottom Banner</TabsTrigger>
-          <TabsTrigger value="give">Give Banner</TabsTrigger>
-        </TabsList>
+        <div className="px-4 sm:px-0 overflow-x-auto max-w-full">
+          <TabsList className="flex gap-2 whitespace-nowrap min-w-0">
+            <TabsTrigger value="hero">Hero Banner</TabsTrigger>
+            <TabsTrigger value="middle">Middle Banner</TabsTrigger>
+            <TabsTrigger value="bottom">Bottom Banner</TabsTrigger>
+            <TabsTrigger value="give">Give Banner</TabsTrigger>
+          </TabsList>
+        </div>
         {/* Banner grids for each tab */}
         {Object.entries(bannerLists).map(([type, banners]) => (
           <TabsContent key={type} value={type}>
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {(Array.isArray(banners) ? banners : []).map((banner: Banner) => (
-                <Card key={banner.id} className="overflow-hidden">
-                  <div className="relative aspect-video">
-                    <Image
-                      src={banner.image}
-                      alt={banner.title}
-                      fill
-                      className="object-cover"
-                    />
-                    <div className="absolute right-2 top-2">
-                      <Badge
-                        variant="secondary"
-                        className={
-                          banner.active
-                            ? "bg-green-100 text-green-800"
-                            : "bg-red-100 text-red-800"
-                        }
-                      >
-                        {banner.active ? "Active" : "Inactive"}
-                      </Badge>
-                    </div>
-                  </div>
-                  <CardContent className="flex flex-col gap-2 p-4">
-                    <h3 className="font-serif font-semibold text-foreground">
-                      {banner.title}
-                    </h3>
-                    <p className="text-sm text-muted-foreground line-clamp-1">
-                      {banner.subtitle}
-                    </p>
-                    <div className="flex items-center gap-2 pt-2">
-                      <Switch
-                        checked={banner.active}
-                        onCheckedChange={() => toggleActive(banner)}
-                        aria-label={`Toggle ${banner.title}`}
+            <div className="px-4 sm:px-0">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 min-w-0">
+                {banners.map((banner: Banner) => (
+                  <Card
+                    key={banner.id}
+                    className="overflow-hidden min-w-0 w-full"
+                  >
+                    <div className="relative aspect-video overflow-hidden max-w-full min-w-0">
+                      <Image
+                        src={banner.image}
+                        alt={banner.title}
+                        fill
+                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                        className="object-cover w-full h-full max-w-full min-w-0"
                       />
-                      <div className="flex-1" />
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => openEdit(banner)}
-                        aria-label={`Edit ${banner.title}`}
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleDelete(banner.id)}
-                        aria-label={`Delete ${banner.title}`}
-                        className="text-destructive hover:text-destructive"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      <div className="absolute right-2 top-2">
+                        <Badge
+                          variant="secondary"
+                          className={
+                            banner.active
+                              ? "bg-green-100 text-green-800"
+                              : "bg-red-100 text-red-800"
+                          }
+                        >
+                          {banner.active ? "Active" : "Inactive"}
+                        </Badge>
+                      </div>
                     </div>
-                  </CardContent>
-                </Card>
-              ))}
+                    <CardContent className="flex flex-col gap-2 p-4 min-w-0">
+                      <h3 className="font-serif font-semibold text-foreground">
+                        {banner.title}
+                      </h3>
+                      <p className="text-sm text-muted-foreground line-clamp-1">
+                        {banner.subtitle}
+                      </p>
+                      <div className="flex flex-wrap items-center gap-2 pt-2">
+                        <div className="flex items-center gap-2">
+                          <Switch
+                            checked={banner.active}
+                            onCheckedChange={() => toggleActive(banner)}
+                            aria-label={`Toggle ${banner.title}`}
+                            disabled={!!toggling[banner.id]}
+                          />
+                        </div>
+
+                        <div className="ml-auto flex w-full justify-end gap-2 sm:w-auto">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => openEdit(banner)}
+                            aria-label={`Edit ${banner.title}`}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleDelete(banner.id)}
+                            aria-label={`Delete ${banner.title}`}
+                            className="text-destructive hover:text-destructive"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+              {Array.isArray(banners) && banners.length === 0 && (
+                <p className="py-12 text-center text-sm text-muted-foreground">
+                  No banners yet. Add a banner to display on the homepage
+                  carousel.
+                </p>
+              )}
             </div>
-            {Array.isArray(banners) && banners.length === 0 && (
-              <p className="py-12 text-center text-sm text-muted-foreground">
-                No banners yet. Add a banner to display on the homepage
-                carousel.
-              </p>
-            )}
           </TabsContent>
         ))}
       </Tabs>

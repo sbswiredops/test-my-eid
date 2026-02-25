@@ -1,9 +1,9 @@
-"use client"
+"use client";
 
-import Link from "next/link"
-import { usePathname } from "next/navigation"
-import { useAuth } from "@/lib/auth-store"
-import { cn } from "@/lib/utils"
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { useAuth } from "@/lib/auth-store";
+import { cn } from "@/lib/utils";
 import {
   LayoutDashboard,
   Package,
@@ -13,26 +13,36 @@ import {
   ArrowLeft,
   Menu,
   X,
-} from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { useState } from "react"
+  ShoppingBag,
+  List,
+  FileText,
+  Home,
+  Users,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useState } from "react";
 
 const navItems = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
   { href: "/admin/products", label: "Products", icon: Package },
   { href: "/admin/orders", label: "Orders", icon: ShoppingCart },
+  { href: "/admin/cart", label: "Cart", icon: ShoppingBag },
+  { href: "/admin/categories", label: "Categories", icon: List },
+  { href: "/admin/faqs", label: "FAQs", icon: FileText },
+  { href: "/admin/homecategory", label: "Homecategory", icon: Home },
+  { href: "/admin/users", label: "Users", icon: Users },
   { href: "/admin/banners", label: "Banners", icon: ImageIcon },
   { href: "/admin/settings", label: "Settings", icon: Settings },
-]
+];
 
 export default function AdminLayout({
   children,
 }: {
-  children: React.ReactNode
+  children: React.ReactNode;
 }) {
-  const pathname = usePathname()
-  const { user, isAdmin } = useAuth()
-  const [sidebarOpen, setSidebarOpen] = useState(false)
+  const pathname = usePathname();
+  const { user, isAdmin } = useAuth();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   if (!user || !isAdmin) {
     return (
@@ -47,11 +57,11 @@ export default function AdminLayout({
           <Link href="/account/login">Sign In</Link>
         </Button>
       </div>
-    )
+    );
   }
 
   return (
-    <div className="flex min-h-screen">
+    <div className="flex min-h-screen min-w-0">
       {/* Mobile overlay */}
       {sidebarOpen && (
         <div
@@ -63,8 +73,8 @@ export default function AdminLayout({
       {/* Sidebar */}
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-50 flex w-60 flex-col bg-sidebar text-sidebar-foreground transition-transform lg:static lg:translate-x-0",
-          sidebarOpen ? "translate-x-0" : "-translate-x-full"
+          "fixed inset-y-0 left-0 z-50 flex w-56 sm:w-60 flex-col bg-sidebar text-sidebar-foreground transition-transform lg:static lg:translate-x-0",
+          sidebarOpen ? "translate-x-0" : "-translate-x-full",
         )}
       >
         <div className="flex h-16 items-center justify-between border-b border-sidebar-border px-4">
@@ -82,29 +92,29 @@ export default function AdminLayout({
             <X className="h-5 w-5" />
           </button>
         </div>
-        <nav className="flex-1 px-3 py-4">
-          <div className="flex flex-col gap-1">
+        <nav className="flex-1 px-3 py-4 overflow-y-auto min-h-0">
+          <div className="flex flex-col gap-1 min-w-0">
             {navItems.map((item) => {
               const isActive =
                 item.href === "/admin"
                   ? pathname === "/admin"
-                  : pathname.startsWith(item.href)
+                  : pathname.startsWith(item.href);
               return (
                 <Link
                   key={item.href}
                   href={item.href}
                   onClick={() => setSidebarOpen(false)}
                   className={cn(
-                    "flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors",
+                    "flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors min-w-0",
                     isActive
                       ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                      : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
+                      : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground",
                   )}
                 >
-                  <item.icon className="h-4 w-4" />
-                  {item.label}
+                  <item.icon className="h-4 w-4 flex-shrink-0" />
+                  <span className="truncate">{item.label}</span>
                 </Link>
-              )
+              );
             })}
           </div>
         </nav>
@@ -120,7 +130,7 @@ export default function AdminLayout({
       </aside>
 
       {/* Main content */}
-      <div className="flex flex-1 flex-col">
+      <div className="flex flex-1 flex-col min-w-0">
         <header className="flex h-16 items-center border-b border-border px-4 lg:px-6">
           <button
             onClick={() => setSidebarOpen(true)}
@@ -130,12 +140,14 @@ export default function AdminLayout({
             <Menu className="h-5 w-5" />
           </button>
           <div className="flex-1" />
-          <span className="text-sm text-muted-foreground">{user.name}</span>
+          <span className="text-sm text-muted-foreground hidden sm:inline">
+            {user.name}
+          </span>
         </header>
-        <main className="flex-1 overflow-y-auto p-4 lg:p-6">
+        <main className="flex-1 overflow-y-auto p-4 lg:p-6 min-w-0">
           {children}
         </main>
       </div>
     </div>
-  )
+  );
 }

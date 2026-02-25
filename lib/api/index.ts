@@ -3,7 +3,7 @@ import productsApi from "./products"
 import categoriesApi from "./categories"
 import bannersApi from "./banners"
 import ordersApi from "./orders"
-import settingsApi from "./settings"
+import { settingsService } from "./settings"
 
 export const api = {
   auth: authApi,
@@ -11,7 +11,7 @@ export const api = {
   categories: categoriesApi,
   banners: bannersApi,
   orders: ordersApi,
-  settings: settingsApi,
+  settings: settingsService,
 }
 
 export default api

@@ -1,66 +1,66 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { defaultSettings } from "@/lib/data"
-import { useApi } from "@/hooks/use-api"
-import api from "@/lib/api"
-import type { StoreSettings } from "@/lib/types"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { toast } from "sonner"
+import { useState, useEffect } from "react";
+import { defaultSettings } from "@/lib/data";
+import { useApi } from "@/hooks/use-api";
+import { settingsService } from "@/lib/api/settings";
+import type { StoreSettings } from "@/lib/types";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { toast } from "sonner";
 
 function loadSettings(): StoreSettings {
   try {
-    const saved = localStorage.getItem("eid-settings")
-    return saved ? JSON.parse(saved) : defaultSettings
+    const saved = localStorage.getItem("eid-settings");
+    return saved ? JSON.parse(saved) : defaultSettings;
   } catch {
-    return defaultSettings
+    return defaultSettings;
   }
 }
 
 export default function AdminSettings() {
-  const { data: apiSettings, mutate } = useApi<StoreSettings>("/settings")
-  const [settings, setSettings] = useState<StoreSettings>(defaultSettings)
-  const [loading, setLoading] = useState(false)
+  const { data: apiSettings, mutate } = useApi<StoreSettings>("/settings");
+  const [settings, setSettings] = useState<StoreSettings>(defaultSettings);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (apiSettings) {
-      setSettings(apiSettings)
+      setSettings(apiSettings);
     } else {
-      setSettings(loadSettings())
+      setSettings(loadSettings());
     }
-  }, [apiSettings])
+  }, [apiSettings]);
 
   const handleSave = async () => {
-    setLoading(true)
+    setLoading(true);
     try {
-      await api.settings.update(settings)
-      localStorage.setItem("eid-settings", JSON.stringify(settings))
-      mutate()
-      toast.success("Settings saved successfully")
+      await settingsService.update(settings);
+      localStorage.setItem("eid-settings", JSON.stringify(settings));
+      mutate();
+      toast.success("Settings saved successfully");
     } catch {
-      localStorage.setItem("eid-settings", JSON.stringify(settings))
-      toast.success("Settings saved locally")
+      localStorage.setItem("eid-settings", JSON.stringify(settings));
+      toast.success("Settings saved locally");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const handleReset = async () => {
     try {
-      await api.settings.update(defaultSettings)
-      setSettings(defaultSettings)
-      localStorage.removeItem("eid-settings")
-      mutate()
-      toast.info("Settings reset to defaults")
+      await settingsService.update(defaultSettings);
+      setSettings(defaultSettings);
+      localStorage.removeItem("eid-settings");
+      mutate();
+      toast.info("Settings reset to defaults");
     } catch {
-      setSettings(defaultSettings)
-      localStorage.removeItem("eid-settings")
-      toast.info("Settings reset locally")
+      setSettings(defaultSettings);
+      localStorage.removeItem("eid-settings");
+      toast.info("Settings reset locally");
     }
-  }
+  };
 
   return (
     <div className="flex flex-col gap-6">
@@ -138,8 +138,8 @@ export default function AdminSettings() {
                 }
               />
               <p className="text-xs text-muted-foreground">
-                Standard delivery charge applied to all orders below the
-                free delivery threshold.
+                Standard delivery charge applied to all orders below the free
+                delivery threshold.
               </p>
             </div>
             <div className="flex flex-col gap-2">
@@ -180,9 +180,7 @@ export default function AdminSettings() {
                   admin@eidcollection.pk
                 </p>
                 <p>
-                  <span className="font-medium text-foreground">
-                    Password:
-                  </span>{" "}
+                  <span className="font-medium text-foreground">Password:</span>{" "}
                   admin123
                 </p>
               </div>
@@ -200,5 +198,5 @@ export default function AdminSettings() {
         </Button>
       </div>
     </div>
-  )
+  );
 }
