@@ -34,7 +34,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     try {
-      const saved = localStorage.getItem("eid-current-user");
+      const saved = localStorage.getItem("current-user");
       if (saved) {
         setUser(JSON.parse(saved));
       }
@@ -54,8 +54,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         response?.raw?.data?.accessToken;
       if (userData) {
         setUser(userData);
-        localStorage.setItem("eid-current-user", JSON.stringify(userData));
-        if (accessToken) localStorage.setItem("eid-token", accessToken);
+        localStorage.setItem("current-user", JSON.stringify(userData));
+        if (accessToken) {
+          localStorage.setItem("access_token", accessToken); // <-- Add this line
+        }
         return { success: true };
       } else {
         // Try to extract error message
@@ -123,8 +125,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       setUser(userData);
       if (userData)
-        localStorage.setItem("eid-current-user", JSON.stringify(userData));
-      if (accessToken) localStorage.setItem("eid-token", accessToken);
+        localStorage.setItem("current-user", JSON.stringify(userData));
+      if (accessToken) {
+        localStorage.setItem("access_token", accessToken); // <-- Add this line
+      }
       return { success: true };
     } catch (error: any) {
       return {
@@ -138,8 +142,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = () => {
     authService.logout().catch(() => {});
     setUser(null);
-    localStorage.removeItem("eid-current-user");
-    localStorage.removeItem("eid-token");
+    localStorage.removeItem("current-user");
+    localStorage.removeItem("access_token");
   };
 
   const updateProfile = async (data: Partial<User>) => {
@@ -148,11 +152,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const res = await authService.getProfile(); // just example to check profile
       const updated = { ...user, ...data };
       setUser(updated);
-      localStorage.setItem("eid-current-user", JSON.stringify(updated));
+      localStorage.setItem("current-user", JSON.stringify(updated));
     } catch (error) {
       const updated = { ...user, ...data };
       setUser(updated);
-      localStorage.setItem("eid-current-user", JSON.stringify(updated));
+      localStorage.setItem("current-user", JSON.stringify(updated));
     }
   };
 

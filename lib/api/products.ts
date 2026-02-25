@@ -36,6 +36,27 @@ export class ProductService {
   async getLowStock(): Promise<ApiResponse<Product[]>> {
     return apiClient.get<Product[]>(API_CONFIG.ENDPOINTS.ADMIN_LOW_STOCK_PRODUCTS);
   }
+
+  // Product size management
+  async createSize(data: Record<string, any>): Promise<ApiResponse<any>> {
+    return apiClient.post(API_CONFIG.ENDPOINTS.PRODUCT_SIZE_CREATE, data);
+  }
+
+  async updateSize(id: string, data: Record<string, any>): Promise<ApiResponse<any>> {
+    return apiClient.patch(API_CONFIG.ENDPOINTS.PRODUCT_SIZE_UPDATE(id), data);
+  }
+
+  async getSizeById(id: string): Promise<ApiResponse<any>> {
+    return apiClient.get(API_CONFIG.ENDPOINTS.PRODUCT_SIZE_BY_ID(id));
+  }
+
+  async deleteSize(id: string): Promise<ApiResponse<null>> {
+    return apiClient.delete(API_CONFIG.ENDPOINTS.PRODUCT_SIZE_DELETE(id));
+  }
+
+  async getSizes(): Promise<ApiResponse<any>> {
+    return apiClient.get(API_CONFIG.ENDPOINTS.PRODUCT_SIZES);
+  }
 }
 
 export const productService = new ProductService();

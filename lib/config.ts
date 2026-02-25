@@ -32,6 +32,12 @@ export const API_CONFIG = {
     PRODUCT_UPDATE: (id: string) => `/products/${id}`, // PATCH (Admin only)
     PRODUCT_DELETE: (id: string) => `/products/${id}`, // DELETE (Admin only)
     PRODUCT_BY_SLUG: (slug: string) => `/products/slug/${slug}`, // GET
+    // Product sizes (5 endpoints)
+    PRODUCT_SIZE_CREATE: '/products/size', // POST (Admin only)
+    PRODUCT_SIZE_UPDATE: (id: string) => `/products/size/${id}`, // PATCH (Admin only)
+    PRODUCT_SIZE_BY_ID: (id: string) => `/products/size/${id}`, // GET
+    PRODUCT_SIZE_DELETE: (id: string) => `/products/size/${id}`, // DELETE (Admin only)
+    PRODUCT_SIZES: '/products/sizes', // GET
 
     // Cart (6 endpoints)
     CART_ADD: '/cart/add', // POST

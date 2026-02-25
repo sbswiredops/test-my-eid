@@ -51,7 +51,7 @@ export default function RegisterPage() {
         toast.success("Account created successfully!");
         // Redirect based on role returned/stored by auth
         try {
-          const saved = localStorage.getItem("eid-current-user");
+          const saved = localStorage.getItem("current-user");
           const current = saved ? JSON.parse(saved) : null;
           if (current?.role === "ADMIN") {
             router.push("/admin");

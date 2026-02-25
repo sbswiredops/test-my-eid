@@ -6,7 +6,7 @@ export class AuthService {
   async register(data: RegisterData): Promise<any> {
     const res = await apiClient.post(API_CONFIG.ENDPOINTS.AUTH_REGISTER, data);
     const payload: { user?: User; accessToken?: string; refreshToken?: string } = res?.data ?? {};
-    if (payload.accessToken) localStorage.setItem('eid-token', payload.accessToken);
+    if (payload.accessToken) localStorage.setItem('access_token', payload.accessToken);
     return {
       user: payload.user,
       accessToken: payload.accessToken,
@@ -18,7 +18,7 @@ export class AuthService {
   async login(credentials: LoginCredentials): Promise<any> {
     const res = await apiClient.post(API_CONFIG.ENDPOINTS.AUTH_LOGIN, credentials);
     const payload: { user?: User; accessToken?: string; refreshToken?: string } = res?.data ?? {};
-    if (payload.accessToken) localStorage.setItem('eid-token', payload.accessToken);
+    if (payload.accessToken) localStorage.setItem('access_token', payload.accessToken);
     return {
       user: payload.user,
       accessToken: payload.accessToken,
@@ -36,8 +36,8 @@ export class AuthService {
   }
 
   async logout(): Promise<any> {
-    localStorage.removeItem('eid-token');
-    localStorage.removeItem('eid-current-user');
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('current-user');
     return apiClient.post(API_CONFIG.ENDPOINTS.AUTH_LOGOUT);
   }
 }

@@ -54,19 +54,26 @@ export interface ApiResponse<T = any> {
   meta?: any;
 }
 export interface Product {
-  id: string
-  name: string
-  slug: string
-  description: string
-  price: number
-  originalPrice?: number
-  images: string[]
-  category: string
-  sizes: string[]
-  stockPerSize: Record<string, number>
-  featured: boolean
-  tags: string[]
-  createdAt: string
+  id: string;
+  name: string;
+  slug: string;
+  description: string;
+  price: number;
+  stock: number;
+  images: string[];
+  categoryId: string;
+  sizes: ProductSize[];
+  faqs?: string[];
+  createdAt: string;
+  featured?: boolean;
+  tags?: string[];
+  originalPrice?: number;
+}
+
+export interface ProductSize {
+  id?: string;
+  size: string;
+  productId?: string;
 }
 
 export interface Category {

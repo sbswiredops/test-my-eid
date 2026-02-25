@@ -28,7 +28,7 @@ export default function LoginPage() {
         toast.success("Welcome back!");
         // Determine role from stored user (set by auth-store)
         try {
-          const saved = localStorage.getItem("eid-current-user");
+          const saved = localStorage.getItem("current-user");
           const current = saved ? JSON.parse(saved) : null;
           if (current?.role === "ADMIN") {
             router.push("/admin");

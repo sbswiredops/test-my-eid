@@ -8,6 +8,7 @@ import {
 } from "@/lib/data";
 import { useProducts, useCategories } from "@/hooks/use-api";
 import { productService } from "@/lib/api/products";
+import { apiClient } from "@/lib/api";
 import type { Product } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -58,10 +59,14 @@ export default function AdminProducts() {
   const [form, setForm] = useState({
     name: "",
     description: "",
+    slug: "",
     price: "",
     originalPrice: "",
-    category: "",
+    stock: "",
+    stockPerSize: "",
+    categoryId: "",
     sizes: "",
+    images: [] as string[],
     featured: false,
     tags: "",
   });
@@ -70,10 +75,14 @@ export default function AdminProducts() {
     setForm({
       name: "",
       description: "",
+      slug: "",
       price: "",
       originalPrice: "",
-      category: "",
+      stock: "",
+      stockPerSize: "",
+      categoryId: "",
       sizes: "",
+      images: [],
       featured: false,
       tags: "",
     });
@@ -85,19 +94,23 @@ export default function AdminProducts() {
     setEditingProduct(product);
     setForm({
       name: product.name,
-      description: product.description,
-      price: product.price.toString(),
-      originalPrice: product.originalPrice?.toString() || "",
-      category: product.category,
-      sizes: product.sizes.join(", "),
-      featured: product.featured,
-      tags: product.tags.join(", "),
+      description: product.description || "",
+      slug: (product as any).slug || "",
+      price: product.price?.toString() || "",
+      originalPrice: (product as any).originalPrice?.toString() || "",
+      stock: product.stock?.toString() || "",
+      stockPerSize: (product as any).stockPerSize ? JSON.stringify((product as any).stockPerSize) : "",
+      categoryId: product.categoryId || "",
+      sizes: Array.isArray(product.sizes) ? product.sizes.map((s: any) => s.size).join(", ") : "",
+      images: product.images || [],
+      featured: !!(product as any).featured,
+      tags: Array.isArray((product as any).tags) ? (product as any).tags.join(", ") : "",
     });
     setDialogOpen(true);
   };
 
   const handleSave = async () => {
-    if (!form.name || !form.price || !form.category) {
+    if (!form.name || !form.price || !form.description || !form.stock || !form.categoryId || !form.sizes) {
       toast.error("Please fill in required fields");
       return;
     }
@@ -108,21 +121,39 @@ export default function AdminProducts() {
         .split(",")
         .map((s) => s.trim())
         .filter(Boolean);
+      const tags = form.tags ? form.tags.split(",").map((t) => t.trim()).filter(Boolean) : [];
+      const stockPerSize = form.stockPerSize ? JSON.parse(form.stockPerSize) : undefined;
 
+      // Require at least one image for new products
+      if (!editingProduct && (!selectedImages || selectedImages.length === 0)) {
+        toast.error("Please upload at least one image");
+        setLoading(false);
+        return;
+      }
+
+      // Build multipart FormData to send files + fields in one request
       const formData = new FormData();
       formData.append("name", form.name);
       formData.append("description", form.description);
+      if (form.slug) formData.append("slug", form.slug);
       formData.append("price", form.price);
-      formData.append("originalPrice", form.originalPrice);
-      formData.append("category", form.category);
-      formData.append("sizes", JSON.stringify(sizes));
+      if (form.originalPrice) formData.append("originalPrice", form.originalPrice);
+      formData.append("stock", form.stock);
+      if (stockPerSize) formData.append("stockPerSize", JSON.stringify(stockPerSize));
+      formData.append("categoryId", form.categoryId);
+      // Append sizes and tags as repeated fields so Nest parses them as arrays
+      sizes.forEach((s) => formData.append("sizes", s));
       formData.append("featured", String(form.featured));
-      formData.append("tags", form.tags);
+      tags.forEach((t) => formData.append("tags", t));
 
-      if (selectedImages) {
+      // Append images: if user selected files, append File objects under 'images'
+      if (selectedImages && selectedImages.length > 0) {
         for (let i = 0; i < selectedImages.length; i++) {
           formData.append("images", selectedImages[i]);
         }
+      } else if (editingProduct && Array.isArray(form.images) && form.images.length > 0) {
+        // No new files selected — keep existing image URLs so DTO validation passes
+        form.images.forEach((url) => formData.append("images", url));
       }
 
       if (editingProduct) {
@@ -156,7 +187,7 @@ export default function AdminProducts() {
   const filtered = productsList.filter((p: Product) => {
     const matchesSearch = p.name.toLowerCase().includes(search.toLowerCase());
     const matchesCategory =
-      filterCategory === "all" || p.category === filterCategory;
+      filterCategory === "all" || p.categoryId === filterCategory;
     return matchesSearch && matchesCategory;
   });
 
@@ -216,7 +247,7 @@ export default function AdminProducts() {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="flex flex-col gap-2">
-                  <Label htmlFor="price">Price (Rs.) *</Label>
+                  <Label htmlFor="price">Price (BDT) *</Label>
                   <Input
                     id="price"
                     type="number"
@@ -228,35 +259,32 @@ export default function AdminProducts() {
                   />
                 </div>
                 <div className="flex flex-col gap-2">
-                  <Label htmlFor="originalPrice">Original Price (Rs.)</Label>
+                  <Label htmlFor="stock">Stock *</Label>
                   <Input
-                    id="originalPrice"
+                    id="stock"
                     type="number"
-                    value={form.originalPrice}
+                    value={form.stock}
                     onChange={(e) =>
-                      setForm((f) => ({
-                        ...f,
-                        originalPrice: e.target.value,
-                      }))
+                      setForm((f) => ({ ...f, stock: e.target.value }))
                     }
                     placeholder="0"
                   />
                 </div>
               </div>
               <div className="flex flex-col gap-2">
-                <Label htmlFor="category">Category *</Label>
+                <Label htmlFor="categoryId">Category *</Label>
                 <Select
-                  value={form.category}
+                  value={form.categoryId}
                   onValueChange={(val) =>
-                    setForm((f) => ({ ...f, category: val }))
+                    setForm((f) => ({ ...f, categoryId: val }))
                   }
                 >
-                  <SelectTrigger id="category">
+                  <SelectTrigger id="categoryId">
                     <SelectValue placeholder="Select category" />
                   </SelectTrigger>
                   <SelectContent>
-                    {categories.map((cat: { slug: string; name: string }) => (
-                      <SelectItem key={cat.slug} value={cat.slug}>
+                    {categories.map((cat: { id: string; name: string }) => (
+                      <SelectItem key={cat.id} value={cat.id}>
                         {cat.name}
                       </SelectItem>
                     ))}
@@ -275,13 +303,39 @@ export default function AdminProducts() {
                 />
               </div>
               <div className="flex flex-col gap-2">
+                <Label htmlFor="slug">Slug</Label>
+                <Input
+                  id="slug"
+                  value={form.slug}
+                  onChange={(e) => setForm((f) => ({ ...f, slug: e.target.value }))}
+                  placeholder="product-slug"
+                />
+              </div>
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="originalPrice">Original Price (BDT)</Label>
+                <Input
+                  id="originalPrice"
+                  type="number"
+                  value={form.originalPrice}
+                  onChange={(e) => setForm((f) => ({ ...f, originalPrice: e.target.value }))}
+                  placeholder="0"
+                />
+              </div>
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="stockPerSize">Stock Per Size (JSON)</Label>
+                <Input
+                  id="stockPerSize"
+                  value={form.stockPerSize}
+                  onChange={(e) => setForm((f) => ({ ...f, stockPerSize: e.target.value }))}
+                  placeholder='{"S":10,"M":5}'
+                />
+              </div>
+              <div className="flex flex-col gap-2">
                 <Label htmlFor="tags">Tags (comma-separated)</Label>
                 <Input
                   id="tags"
                   value={form.tags}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, tags: e.target.value }))
-                  }
+                  onChange={(e) => setForm((f) => ({ ...f, tags: e.target.value }))}
                   placeholder="eid, formal, embroidered"
                 />
               </div>
@@ -403,7 +457,10 @@ export default function AdminProducts() {
                       </div>
                     </td>
                     <td className="p-4 capitalize text-muted-foreground">
-                      {product.category.replace("-", " ")}
+                      {(() => {
+                        const cat = categories.find((c: any) => c.id === product.categoryId);
+                        return cat ? cat.name : product.categoryId;
+                      })()}
                     </td>
                     <td className="p-4">
                       <span className="font-medium text-foreground">
