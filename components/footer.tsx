@@ -2,10 +2,12 @@
 
 import Link from "next/link";
 import { useCategories } from "@/hooks/use-api";
+import { useState } from "react";
 
 export function Footer() {
   const { data: categoriesData } = useCategories();
   const categories = categoriesData || [];
+  const [logoError, setLogoError] = useState(false);
   return (
     <footer className="border-t border-border/60 bg-card">
       <div className="mx-auto max-w-7xl px-4 py-12">
@@ -13,13 +15,18 @@ export function Footer() {
           {/* Brand */}
           <div className="flex flex-col gap-3">
             <Link href="/" className="flex items-center gap-2">
-              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary">
-                <span className="text-sm font-bold text-primary-foreground">
-                  EC
-                </span>
-              </div>
+              {!logoError ? (
+                <img
+                  src="/logo.jpeg"
+                  alt="Eid Collection"
+                  className="h-9 w-9 rounded-full object-cover"
+                  onError={() => setLogoError(true)}
+                />
+              ) : (
+                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary"></div>
+              )}
               <span className="font-serif text-xl font-bold tracking-tight text-foreground">
-                Eid Collection
+                E-COMMERCE SHOPPING
               </span>
             </Link>
             <p className="text-sm leading-relaxed text-muted-foreground">
@@ -104,12 +111,12 @@ export function Footer() {
               Contact
             </h3>
             <ul className="flex flex-col gap-2">
-              <li className="text-sm text-muted-foreground">+92 300 1234567</li>
+              <li className="text-sm text-muted-foreground">01788788256</li>
               <li className="text-sm text-muted-foreground">
-                info@eidcollection.pk
+                contact@orbit25.com
               </li>
               <li className="text-sm text-muted-foreground">
-                Lahore, Punjab, Pakistan
+                153/1 Moishanbari Road, kuratoli, kuril, Dhaka-1229
               </li>
             </ul>
           </div>
@@ -117,7 +124,7 @@ export function Footer() {
 
         <div className="mt-10 flex flex-col items-center gap-2 border-t border-border/60 pt-6 sm:flex-row sm:justify-between">
           <p className="text-xs text-muted-foreground">
-            {"2026 Eid Collection. All rights reserved."}
+            {"2026 E-COMMERCE SHOPPING. All rights reserved."}
           </p>
           <p className="text-xs text-muted-foreground">
             Cash on Delivery Available Nationwide

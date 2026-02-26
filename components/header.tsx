@@ -38,6 +38,7 @@ export function Header() {
   const categories = categoriesData || [];
   const [mobileOpen, setMobileOpen] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
+  const [logoError, setLogoError] = useState(false);
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/60 bg-background/95 backdrop-blur-md supports-backdrop-filter:bg-background/80">
@@ -99,13 +100,23 @@ export function Header() {
 
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2">
-          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary">
-            <span className="text-sm font-bold text-primary-foreground">
-              EC
-            </span>
-          </div>
+          {!logoError ? (
+            // Try to load custom logo from public/images/logo.jpeg
+            <img
+              src="/logo.jpeg"
+              alt="Eid Collection"
+              className="h-9 w-9 rounded-full object-cover"
+              onError={() => setLogoError(true)}
+            />
+          ) : (
+            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary">
+              <span className="text-sm font-bold text-primary-foreground">
+                EC
+              </span>
+            </div>
+          )}
           <span className="hidden font-serif text-xl font-bold tracking-tight text-foreground sm:block">
-            Eid Collection
+            E-COMMERCE SHOPPING
           </span>
         </Link>
 
