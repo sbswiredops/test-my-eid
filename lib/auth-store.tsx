@@ -24,6 +24,7 @@ interface AuthContextType {
   logout: () => void;
   updateProfile: (data: Partial<User>) => Promise<void>;
   isAdmin: boolean;
+  isInitialized: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -65,6 +66,7 @@ async function refreshAccessToken() {
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<Omit<User, "password"> | null>(null);
+  const [isInitialized, setIsInitialized] = useState(false);
 
   // On mount, load user
   useEffect(() => {
@@ -76,6 +78,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch {
       // ignore
     }
+    setIsInitialized(true);
   }, []);
 
   // Token auto-refresh effect
@@ -234,7 +237,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ user, login, register, logout, updateProfile, isAdmin }}
+      value={{ user, login, register, logout, updateProfile, isAdmin, isInitialized }}
     >
       {children}
     </AuthContext.Provider>
