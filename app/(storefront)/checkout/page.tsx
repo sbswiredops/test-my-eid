@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useRouter, usePathname, useSearchParams } from "next/navigation"
+import { useRouter, usePathname } from "next/navigation"
 import Link from "next/link"
 import { useCart } from "@/lib/cart-store"
 import { useAuth } from "@/lib/auth-store"
@@ -25,7 +25,6 @@ import { toast } from "sonner"
 
 export default function CheckoutPage() {
   const router = useRouter()
-  const search = useSearchParams()
   const pathname = usePathname()
   const { items: cartItems, subtotal: cartSubtotal, clearCart, addItem } = useCart()
   const { user } = useAuth()
@@ -33,7 +32,8 @@ export default function CheckoutPage() {
 
   useEffect(() => {
     try {
-      const isBuyNow = search.get('buyNow')
+      const params = new URLSearchParams(window.location.search)
+      const isBuyNow = params.get('buyNow')
       if (isBuyNow) {
         const raw = sessionStorage.getItem('eid-buy-now')
         if (raw) {
@@ -44,20 +44,21 @@ export default function CheckoutPage() {
     } catch (e) {
       // ignore
     }
-  }, [search])
+  }, [])
 
   // Require login for checkout: if user is not logged in, redirect to login
   useEffect(() => {
     if (!user) {
       try {
-        const searchStr = search ? search.toString() : ""
+        const params = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null
+        const searchStr = params ? params.toString() : ''
         const full = `${pathname}${searchStr ? `?${searchStr}` : ""}`
         router.push(`/account/login?next=${encodeURIComponent(full)}`)
       } catch {
         router.push(`/account/login`)
       }
     }
-  }, [user, router, pathname, search])
+  }, [user, router, pathname])
   const { createOrder } = useOrders()
 
   const [formData, setFormData] = useState({

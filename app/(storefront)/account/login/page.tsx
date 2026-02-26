@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-store";
 import { Button } from "@/components/ui/button";
@@ -11,7 +11,6 @@ import { toast } from "sonner";
 
 export default function LoginPage() {
   const router = useRouter();
-  const search = useSearchParams();
   const { login } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -29,7 +28,8 @@ export default function LoginPage() {
         toast.success("Welcome back!");
         // After login, redirect to `next` if provided, otherwise to account/admin
         try {
-          const next = search.get("next");
+          const params = new URLSearchParams(window.location.search);
+          const next = params.get("next");
           if (next) {
             router.push(next);
             return;
