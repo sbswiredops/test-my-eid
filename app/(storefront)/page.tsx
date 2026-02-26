@@ -49,15 +49,28 @@ export default function HomePage() {
     ? homeCategoriesData
     : [];
 
-  const { data: middleBannersData } = useMiddleBanners();
-  const middleBanners = Array.isArray(middleBannersData)
-    ? middleBannersData
-    : middleBannersData?.items || middleBannersData?.data || [];
+  type Banner = {
+    id?: string | number;
+    image?: string;
+    img?: string;
+    title?: string;
+    ctaLink?: string;
+    link?: string;
+  };
 
-  const { data: bottomBannersData } = useBottomBanners();
-  const bottomBanners = Array.isArray(bottomBannersData)
+  const { data: middleBannersData } = useMiddleBanners() as {
+    data?: Banner[] | { items?: Banner[]; data?: Banner[] };
+  };
+  const middleBanners: Banner[] = Array.isArray(middleBannersData)
+    ? middleBannersData
+    : (middleBannersData?.items ?? middleBannersData?.data ?? []);
+
+  const { data: bottomBannersData } = useBottomBanners() as {
+    data?: Banner[] | { items?: Banner[]; data?: Banner[] };
+  };
+  const bottomBanners: Banner[] = Array.isArray(bottomBannersData)
     ? bottomBannersData
-    : bottomBannersData?.items || bottomBannersData?.data || [];
+    : (bottomBannersData?.items ?? bottomBannersData?.data ?? []);
 
   const featured = products.filter((p: any) => p.featured);
   const newArrivals = [...products]
@@ -92,117 +105,6 @@ export default function HomePage() {
           ))}
         </div>
       </section>
-
-      {/* Home Categories + Middle / Bottom Banners */}
-      {homeCategories.length > 0 && (
-        <section className="mx-auto w-full max-w-7xl px-4 py-12">
-          <div className="mb-8 text-center">
-            <h2 className="font-serif text-2xl font-bold tracking-tight text-foreground sm:text-3xl text-balance">
-              Collections
-            </h2>
-            <p className="mt-2 text-sm text-muted-foreground">
-              Curated collections for this season
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {homeCategories.slice(0, 2).map((hc: any, i: number) => (
-              <div
-                key={hc.id ?? hc.slug ?? i}
-                className="group relative overflow-hidden rounded-lg"
-              >
-                <div className="aspect-3/4 overflow-hidden">
-                  <img
-                    src={hc.image}
-                    alt={hc.name}
-                    className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                  />
-                </div>
-                <div className="absolute inset-0 flex flex-col items-center justify-end bg-linear-to-t from-black/70 via-black/20 to-transparent p-4">
-                  <h3 className="text-center font-serif text-lg font-bold text-white sm:text-xl">
-                    {hc.name}
-                  </h3>
-                  {hc.description && (
-                    <p className="mt-1 text-xs text-white/80">
-                      {hc.description}
-                    </p>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Insert middle banner after the first two home categories */}
-          {homeCategories.length > 2 && middleBanners.length > 0 && (
-            <div className="mt-10">
-              {middleBanners.map((b: any, idx: number) => (
-                <div
-                  key={b.id ?? idx}
-                  className="mb-6 w-full overflow-hidden rounded-lg"
-                >
-                  <a href={b.ctaLink ?? b.link ?? "#"}>
-                    <img
-                      src={b.image ?? b.img}
-                      alt={b.title ?? ""}
-                      className="w-full object-cover"
-                    />
-                  </a>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* If there are remaining home categories beyond two, show them separately */}
-          {homeCategories.length > 2 && (
-            <div className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {homeCategories.slice(2).map((hc: any, i: number) => (
-                <div
-                  key={hc.id ?? hc.slug ?? `hc-${i}`}
-                  className="group relative overflow-hidden rounded-lg"
-                >
-                  <div className="aspect-3/4 overflow-hidden">
-                    <img
-                      src={hc.image}
-                      alt={hc.name}
-                      className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                    />
-                  </div>
-                  <div className="absolute inset-0 flex flex-col items-center justify-end bg-linear-to-t from-black/70 via-black/20 to-transparent p-4">
-                    <h3 className="text-center font-serif text-lg font-bold text-white sm:text-xl">
-                      {hc.name}
-                    </h3>
-                    {hc.description && (
-                      <p className="mt-1 text-xs text-white/80">
-                        {hc.description}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Bottom banners */}
-          {bottomBanners.length > 0 && (
-            <div className="mt-10">
-              {bottomBanners.map((b: any, idx: number) => (
-                <div
-                  key={b.id ?? idx}
-                  className="mb-6 w-full overflow-hidden rounded-lg"
-                >
-                  <a href={b.ctaLink ?? b.link ?? "#"}>
-                    <img
-                      src={b.image ?? b.img}
-                      alt={b.title ?? ""}
-                      className="w-full object-cover"
-                    />
-                  </a>
-                </div>
-              ))}
-            </div>
-          )}
-        </section>
-      )}
 
       {/* Shop by Category */}
       <section className="mx-auto w-full max-w-7xl px-4 py-12">
@@ -239,29 +141,338 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Featured Products */}
-      <section className="bg-card">
-        <div className="mx-auto max-w-7xl px-4 py-12">
-          <div className="mb-8 flex items-center justify-between">
-            <div>
-              <h2 className="font-serif text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
-                Featured Products
-              </h2>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Our handpicked favorites for this Eid
-              </p>
+      {/* Home Categories: render each as its own section with products and category cards */}
+      {homeCategories.length > 0 && (
+        <div className="w-full">
+          {homeCategories.slice(0, 2).map((hc: any) => {
+            const hcProducts: any[] = Array.isArray(hc.products)
+              ? hc.products
+              : [];
+            const hcProductIds = new Set(hcProducts.map((p) => p.id));
+
+            return (
+              <section
+                key={hc.id}
+                className="mx-auto w-full max-w-7xl px-4 py-12 border-t"
+              >
+                <div className="mb-6 flex items-start justify-between">
+                  <div>
+                    <h2 className="font-serif text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
+                      {hc.name}
+                    </h2>
+                    {hc.shortDescription && (
+                      <p className="mt-2 text-sm text-muted-foreground">
+                        {hc.shortDescription}
+                      </p>
+                    )}
+                  </div>
+                  <div>
+                    {hc.image && (
+                      <img
+                        src={hc.image}
+                        alt={hc.name}
+                        className="h-20 w-48 rounded object-cover"
+                      />
+                    )}
+                  </div>
+                </div>
+
+                {/* Unified grid: categories + products together, same-size cards */}
+                <div className="mb-6">
+                  <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
+                    {(() => {
+                      // Build a combined list: categories first, then products not already included
+                      const items: any[] = [];
+
+                      if (Array.isArray(hc.categories)) {
+                        for (const cat of hc.categories) {
+                          items.push({ type: "category", item: cat });
+                        }
+                      }
+
+                      // collect product ids already added (from hc.products)
+                      const seen = new Set<string>();
+                      for (const p of hcProducts) {
+                        seen.add(p.id);
+                      }
+
+                      // add home-category products
+                      for (const p of hcProducts) {
+                        items.push({ type: "product", item: p });
+                      }
+
+                      // also include products from categories that aren't already included
+                      if (Array.isArray(hc.categories)) {
+                        for (const cat of hc.categories) {
+                          if (Array.isArray(cat.products)) {
+                            for (const p of cat.products) {
+                              if (!seen.has(p.id)) {
+                                seen.add(p.id);
+                                items.push({ type: "product", item: p });
+                              }
+                            }
+                          }
+                        }
+                      }
+
+                      // Only show up to 8 items (2 rows x 4 cols). If more exist, overlay "See more" on 8th.
+                      const maxVisible = 8;
+                      const visible = items.slice(0, maxVisible);
+                      const hasMore = items.length > maxVisible;
+
+                      return visible.map((entry, idx) => {
+                        const showOverlay = hasMore && idx === maxVisible - 1;
+
+                        if (entry.type === "category") {
+                          const cat = entry.item;
+                          return (
+                            <div key={`cat-${cat.id}`} className="relative">
+                              <Link
+                                href={`/shop?category=${cat.slug}`}
+                                className="group flex flex-col overflow-hidden rounded-lg border border-border/60 bg-card transition-all hover:shadow-md"
+                              >
+                                <div className="relative aspect-[3/4] overflow-hidden bg-muted">
+                                  <img
+                                    src={cat.image}
+                                    alt={cat.name}
+                                    className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                                  />
+                                </div>
+                                <div className="flex flex-1 flex-col gap-1.5 p-3">
+                                  <h3 className="text-sm font-medium leading-tight text-card-foreground line-clamp-2">
+                                    {cat.name}
+                                  </h3>
+                                  <div className="mt-auto">
+                                    <p className="text-xs text-muted-foreground">
+                                      {cat.products?.length || 0} products
+                                    </p>
+                                  </div>
+                                </div>
+                              </Link>
+
+                              {showOverlay && (
+                                <div className="absolute inset-0 flex items-center justify-center">
+                                  <Link
+                                    href={`/shop?homeCategory=${hc.slug ?? hc.id}`}
+                                    className="rounded bg-black/60 px-4 py-2 text-sm font-medium text-white"
+                                  >
+                                    See more
+                                  </Link>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        }
+
+                        const product = entry.item;
+                        return (
+                          <div key={`p-${product.id}`} className="relative">
+                            <ProductCard product={product} />
+                            {showOverlay && (
+                              <div className="absolute inset-0 flex items-center justify-center">
+                                <Link
+                                  href={`/shop?homeCategory=${hc.slug ?? hc.id}`}
+                                  className="rounded bg-black/60 px-4 py-2 text-sm font-medium text-white"
+                                >
+                                  See more
+                                </Link>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      });
+                    })()}
+                  </div>
+                </div>
+              </section>
+            );
+          })}
+
+          {/* middle banners after first two home categories */}
+          {middleBanners.length > 0 && (
+            <div className="mx-auto max-w-7xl px-4 py-6">
+              {middleBanners.map((b: any, idx: number) => (
+                <div
+                  key={b.id ?? idx}
+                  className="mb-6 w-full overflow-hidden rounded-lg"
+                >
+                  <a href={b.ctaLink ?? b.link ?? "#"}>
+                    <img
+                      src={b.image ?? b.img}
+                      alt={b.title ?? ""}
+                      className="w-full object-cover"
+                    />
+                  </a>
+                </div>
+              ))}
             </div>
-            <Button variant="outline" asChild>
-              <Link href="/shop">View All</Link>
-            </Button>
-          </div>
-          <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
-            {featured.map((product: any) => (
-              <ProductCard key={product.id} product={product} />
-            ))}
-          </div>
+          )}
+
+          {homeCategories.slice(2).map((hc: any) => {
+            const hcProducts: any[] = Array.isArray(hc.products)
+              ? hc.products
+              : [];
+            const hcProductIds = new Set(hcProducts.map((p) => p.id));
+
+            return (
+              <section
+                key={hc.id}
+                className="mx-auto w-full max-w-7xl px-4 py-12 border-t"
+              >
+                <div className="mb-6 flex items-start justify-between">
+                  <div>
+                    <h2 className="font-serif text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
+                      {hc.name}
+                    </h2>
+                    {hc.shortDescription && (
+                      <p className="mt-2 text-sm text-muted-foreground">
+                        {hc.shortDescription}
+                      </p>
+                    )}
+                  </div>
+                  <div>
+                    {hc.image && (
+                      <img
+                        src={hc.image}
+                        alt={hc.name}
+                        className="h-20 w-48 rounded object-cover"
+                      />
+                    )}
+                  </div>
+                </div>
+
+                {/* Unified grid: categories + products together, same-size cards */}
+                <div className="mb-6">
+                  <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
+                    {(() => {
+                      // Build a combined list: categories first, then products not already included
+                      const items: any[] = [];
+
+                      if (Array.isArray(hc.categories)) {
+                        for (const cat of hc.categories) {
+                          items.push({ type: "category", item: cat });
+                        }
+                      }
+
+                      // collect product ids already added (from hc.products)
+                      const seen = new Set<string>();
+                      for (const p of hcProducts) {
+                        seen.add(p.id);
+                      }
+
+                      // add home-category products
+                      for (const p of hcProducts) {
+                        items.push({ type: "product", item: p });
+                      }
+
+                      // also include products from categories that aren't already included
+                      if (Array.isArray(hc.categories)) {
+                        for (const cat of hc.categories) {
+                          if (Array.isArray(cat.products)) {
+                            for (const p of cat.products) {
+                              if (!seen.has(p.id)) {
+                                seen.add(p.id);
+                                items.push({ type: "product", item: p });
+                              }
+                            }
+                          }
+                        }
+                      }
+
+                      // Only show up to 8 items (2 rows x 4 cols). If more exist, overlay "See more" on 8th.
+                      const maxVisible = 8;
+                      const visible = items.slice(0, maxVisible);
+                      const hasMore = items.length > maxVisible;
+
+                      return visible.map((entry, idx) => {
+                        const showOverlay = hasMore && idx === maxVisible - 1;
+
+                        if (entry.type === "category") {
+                          const cat = entry.item;
+                          return (
+                            <div key={`cat-${cat.id}`} className="relative">
+                              <Link
+                                href={`/shop?category=${cat.slug}`}
+                                className="group flex flex-col overflow-hidden rounded-lg border border-border/60 bg-card transition-all hover:shadow-md"
+                              >
+                                <div className="relative aspect-[3/4] overflow-hidden bg-muted">
+                                  <img
+                                    src={cat.image}
+                                    alt={cat.name}
+                                    className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                                  />
+                                </div>
+                                <div className="flex flex-1 flex-col gap-1.5 p-3">
+                                  <h3 className="text-sm font-medium leading-tight text-card-foreground line-clamp-2">
+                                    {cat.name}
+                                  </h3>
+                                  <div className="mt-auto">
+                                    <p className="text-xs text-muted-foreground">
+                                      {cat.products?.length || 0} products
+                                    </p>
+                                  </div>
+                                </div>
+                              </Link>
+
+                              {showOverlay && (
+                                <div className="absolute inset-0 flex items-center justify-center">
+                                  <Link
+                                    href={`/shop?homeCategory=${hc.slug ?? hc.id}`}
+                                    className="rounded bg-black/60 px-4 py-2 text-sm font-medium text-white"
+                                  >
+                                    See more
+                                  </Link>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        }
+
+                        const product = entry.item;
+                        return (
+                          <div key={`p-${product.id}`} className="relative">
+                            <ProductCard product={product} />
+                            {showOverlay && (
+                              <div className="absolute inset-0 flex items-center justify-center">
+                                <Link
+                                  href={`/shop?homeCategory=${hc.slug ?? hc.id}`}
+                                  className="rounded bg-black/60 px-4 py-2 text-sm font-medium text-white"
+                                >
+                                  See more
+                                </Link>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      });
+                    })()}
+                  </div>
+                </div>
+              </section>
+            );
+          })}
+
+          {/* Bottom banners */}
+          {bottomBanners.length > 0 && (
+            <div className="mx-auto max-w-7xl px-4 py-6">
+              {bottomBanners.map((b: any, idx: number) => (
+                <div
+                  key={b.id ?? idx}
+                  className="mb-6 w-full overflow-hidden rounded-lg"
+                >
+                  <a href={b.ctaLink ?? b.link ?? "#"}>
+                    <img
+                      src={b.image ?? b.img}
+                      alt={b.title ?? ""}
+                      className="w-full object-cover"
+                    />
+                  </a>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
-      </section>
+      )}
 
       {/* Promotional Banner */}
       <section className="relative overflow-hidden bg-primary py-16">
@@ -288,28 +499,6 @@ export default function HomePage() {
           <Button variant="secondary" size="lg" className="mt-6" asChild>
             <Link href="/shop">Shop the Sale</Link>
           </Button>
-        </div>
-      </section>
-
-      {/* New Arrivals */}
-      <section className="mx-auto w-full max-w-7xl px-4 py-12">
-        <div className="mb-8 flex items-center justify-between">
-          <div>
-            <h2 className="font-serif text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
-              New Arrivals
-            </h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Fresh additions to our Eid collection
-            </p>
-          </div>
-          <Button variant="outline" asChild>
-            <Link href="/shop?sort=newest">See More</Link>
-          </Button>
-        </div>
-        <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
-          {newArrivals.map((product) => (
-            <ProductCard key={product.id} product={product} />
-          ))}
         </div>
       </section>
     </div>

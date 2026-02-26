@@ -108,6 +108,7 @@ const HomeCategoryPage = () => {
   const [form, setForm] = useState({
     name: "",
     priority: "",
+    shortDescription: "",
     categoryIds: [] as string[],
     productIds: [] as string[],
   });
@@ -116,6 +117,7 @@ const HomeCategoryPage = () => {
     setForm({
       name: "",
       priority: "",
+      shortDescription: "",
       categoryIds: [],
       productIds: [],
     });
@@ -127,6 +129,7 @@ const HomeCategoryPage = () => {
     setForm({
       name: homeCategory.name,
       priority: homeCategory.priority?.toString() || "",
+      shortDescription: homeCategory.shortDescription || "",
       categoryIds: homeCategory.categories?.map((c: Category) => c.id) || [],
       productIds: homeCategory.products?.map((p: Product) => p.id) || [],
     });
@@ -144,6 +147,7 @@ const HomeCategoryPage = () => {
       const data = {
         name: form.name,
         priority: form.priority ? Number(form.priority) : undefined,
+        shortDescription: form.shortDescription,
         categoryIds: form.categoryIds,
         productIds: form.productIds,
       };
@@ -259,6 +263,18 @@ const HomeCategoryPage = () => {
                 </div>
 
                 {/* Description removed */}
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="shortDescription">Short Description</Label>
+                  <Textarea
+                    id="shortDescription"
+                    value={form.shortDescription}
+                    onChange={(e) =>
+                      setForm((f) => ({ ...f, shortDescription: e.target.value }))
+                    }
+                    placeholder="A short summary for the home category"
+                    rows={3}
+                  />
+                </div>
               </div>
 
               {/* Categories Selection */}
@@ -555,10 +571,11 @@ const HomeCategoryPage = () => {
                           <p className="font-medium text-foreground">
                             {homeCategory.name}
                           </p>
-                          {homeCategory.description &&
-                            {
-                              /* description removed from display */
-                            }}
+                            {homeCategory.shortDescription && (
+                              <p className="text-sm text-muted-foreground mt-1">
+                                {homeCategory.shortDescription}
+                              </p>
+                            )}
                         </div>
                       </td>
                       <td className="p-4">

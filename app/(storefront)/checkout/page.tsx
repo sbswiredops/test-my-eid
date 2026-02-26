@@ -1,7 +1,7 @@
 "use client"
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
+import { useState, useEffect } from "react"
+import { useRouter, usePathname, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { useCart } from "@/lib/cart-store"
 import { useAuth } from "@/lib/auth-store"
@@ -25,8 +25,39 @@ import { toast } from "sonner"
 
 export default function CheckoutPage() {
   const router = useRouter()
-  const { items, subtotal, clearCart } = useCart()
+  const search = useSearchParams()
+  const pathname = usePathname()
+  const { items: cartItems, subtotal: cartSubtotal, clearCart, addItem } = useCart()
   const { user } = useAuth()
+  const [buyNowItems, setBuyNowItems] = useState<any[] | null>(null)
+
+  useEffect(() => {
+    try {
+      const isBuyNow = search.get('buyNow')
+      if (isBuyNow) {
+        const raw = sessionStorage.getItem('eid-buy-now')
+        if (raw) {
+          const parsed = JSON.parse(raw)
+          setBuyNowItems([parsed])
+        }
+      }
+    } catch (e) {
+      // ignore
+    }
+  }, [search])
+
+  // Require login for checkout: if user is not logged in, redirect to login
+  useEffect(() => {
+    if (!user) {
+      try {
+        const searchStr = search ? search.toString() : ""
+        const full = `${pathname}${searchStr ? `?${searchStr}` : ""}`
+        router.push(`/account/login?next=${encodeURIComponent(full)}`)
+      } catch {
+        router.push(`/account/login`)
+      }
+    }
+  }, [user, router, pathname, search])
   const { createOrder } = useOrders()
 
   const [formData, setFormData] = useState({
@@ -40,13 +71,16 @@ export default function CheckoutPage() {
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [submitting, setSubmitting] = useState(false)
 
+  // determine which items to use: buyNowItems override cart if present
+  const itemsToUse = buyNowItems && buyNowItems.length > 0 ? buyNowItems : cartItems
+  const subtotal = itemsToUse.reduce((sum, item) => sum + item.price * item.quantity, 0)
   const deliveryCharge =
     subtotal >= defaultSettings.freeDeliveryThreshold
       ? 0
       : defaultSettings.deliveryCharge
   const total = subtotal + deliveryCharge
 
-  if (items.length === 0) {
+  if (itemsToUse.length === 0) {
     return (
       <div className="mx-auto max-w-7xl px-4 py-16">
         <div className="flex flex-col items-center justify-center text-center">
@@ -84,9 +118,32 @@ export default function CheckoutPage() {
 
     setSubmitting(true)
     // Simulate processing
-    setTimeout(() => {
+    setTimeout(async () => {
+      // If this is a buy-now flow and the user is logged in, temporarily
+      // add the buy-now item(s) to the server cart so the backend
+      // (which reads the user's cart server-side) can create the order.
+      if (buyNowItems && buyNowItems.length > 0 && user) {
+        try {
+          // add each buy-now item to server cart
+          for (const it of buyNowItems) {
+            // ensure shape matches CartItem expected by addItem
+            await addItem({
+              productId: it.productId,
+              name: it.name,
+              price: Number(it.price) || 0,
+              size: it.size,
+              quantity: Number(it.quantity) || 1,
+              image: it.image || '/images/placeholder.png',
+              slug: it.slug || '',
+            })
+          }
+        } catch (e) {
+          // proceed — createOrder may still fail if cart wasn't synced
+        }
+      }
+
       const order = createOrder(
-        items,
+        itemsToUse,
         {
           name: formData.name,
           email: formData.email,
@@ -97,9 +154,26 @@ export default function CheckoutPage() {
         },
         subtotal
       )
-      clearCart()
+
+      // If we temporarily added buy-now items to the server cart, clear them
+      // after order creation so they don't remain in the user's persistent cart.
+      if (buyNowItems && buyNowItems.length > 0 && user) {
+        try {
+          await clearCart()
+        } catch {}
+      } else {
+        // Clear cart only when checking out from cart; leave buy-now flow as-is for guests
+        if (!buyNowItems) clearCart()
+      }
+
+      try {
+        sessionStorage.removeItem('eid-buy-now')
+      } catch {}
+
       toast.success("Order placed successfully!")
-      router.push(`/checkout/success?orderId=${order.id}`)
+      const created = await order
+      const displayId = created?.orderId ?? created?.id ?? ""
+      router.push(`/checkout/success?orderId=${encodeURIComponent(displayId)}`)
     }, 1000)
   }
 
@@ -271,7 +345,7 @@ export default function CheckoutPage() {
               </h2>
               <Separator className="my-4" />
               <div className="flex flex-col gap-3">
-                {items.map((item) => (
+                {itemsToUse.map((item) => (
                   <div
                     key={`${item.productId}-${item.size}`}
                     className="flex items-center justify-between text-sm"

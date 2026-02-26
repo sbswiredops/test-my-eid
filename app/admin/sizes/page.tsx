@@ -27,6 +27,8 @@ export default function AdminSizesPage() {
     size: "",
     sizeDescription: "",
     order: "",
+    length: "",
+    chest: "",
   });
 
   const load = async () => {
@@ -47,7 +49,7 @@ export default function AdminSizesPage() {
 
   const openCreate = () => {
     setEditing(null);
-    setForm({ size: "", sizeDescription: "", order: "" });
+    setForm({ size: "", sizeDescription: "", order: "", length: "", chest: "" });
     setDialogOpen(true);
   };
 
@@ -57,6 +59,9 @@ export default function AdminSizesPage() {
       size: s.size,
       sizeDescription: s.sizeDescription || "",
       order: s.order !== undefined && s.order !== null ? String(s.order) : "",
+      length:
+        s.length !== undefined && s.length !== null ? String(s.length) : "",
+      chest: s.chest !== undefined && s.chest !== null ? String(s.chest) : "",
     });
     setDialogOpen(true);
   };
@@ -75,6 +80,14 @@ export default function AdminSizesPage() {
       if (form.order && form.order.toString().trim().length > 0) {
         const parsed = Number(form.order);
         payload.order = Number.isNaN(parsed) ? 0 : parsed;
+      }
+      if (form.length && form.length.toString().trim().length > 0) {
+        const parsed = Number(form.length);
+        payload.length = Number.isNaN(parsed) ? 0 : parsed;
+      }
+      if (form.chest && form.chest.toString().trim().length > 0) {
+        const parsed = Number(form.chest);
+        payload.chest = Number.isNaN(parsed) ? 0 : parsed;
       }
       if (editing) {
         await productService.updateSize(editing.id as string, payload);
@@ -175,6 +188,28 @@ export default function AdminSizesPage() {
                     placeholder="0"
                   />
                 </div>
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="length">Length</Label>
+                  <Input
+                    id="length"
+                    value={(form as any).length || ""}
+                    onChange={(e) =>
+                      setForm((f: any) => ({ ...f, length: e.target.value }))
+                    }
+                    placeholder="0"
+                  />
+                </div>
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="chest">Chest</Label>
+                  <Input
+                    id="chest"
+                    value={(form as any).chest || ""}
+                    onChange={(e) =>
+                      setForm((f: any) => ({ ...f, chest: e.target.value }))
+                    }
+                    placeholder="0"
+                  />
+                </div>
                 <Button
                   onClick={handleSave}
                   disabled={loading}
@@ -205,6 +240,12 @@ export default function AdminSizesPage() {
                     Order
                   </th>
                   <th className="p-4 font-medium text-muted-foreground">
+                    Length
+                  </th>
+                  <th className="p-4 font-medium text-muted-foreground">
+                    Chest
+                  </th>
+                  <th className="p-4 font-medium text-muted-foreground">
                     Description
                   </th>
                   <th className="p-4 font-medium text-muted-foreground">
@@ -220,6 +261,8 @@ export default function AdminSizesPage() {
                   >
                     <td className="p-4">{s.size}</td>
                     <td className="p-4">{s.order ?? ""}</td>
+                    <td className="p-4">{s.length ?? ""}</td>
+                    <td className="p-4">{s.chest ?? ""}</td>
                     <td className="p-4">{s.sizeDescription}</td>
                     <td className="p-4">
                       <div className="flex items-center gap-1">

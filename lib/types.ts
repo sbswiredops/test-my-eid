@@ -40,6 +40,8 @@ export interface ProductSize {
   id: string;
   size: string; // Changed from 'size' to 'name' for consistency
   sizeDescription?: string;
+  length?: number;
+  chest?: number;
   order?: number;
   createdAt?: string;
   updatedAt?: string;
@@ -170,15 +172,19 @@ export interface Cart {
 
 // Order types
 export interface OrderItem {
-  id: string;
-  product: Product;
+  id?: string;
+  product?: Product | null;
   productId: string;
-  order: Order;
-  orderId: string;
+  order?: Order | null;
+  orderId?: string;
   quantity: number;
   price: number;
   size?: string;
-  createdAt: string;
+  // optional convenience fields from API
+  name?: string;
+  image?: string;
+  slug?: string;
+  createdAt?: string;
 }
 
 export interface Customer {
@@ -205,6 +211,8 @@ export interface Order {
   createdAt: string;
   updatedAt?: string;
   userId?: string;
+    orderId?: string;
+
 }
 
 export type OrderStatus = 

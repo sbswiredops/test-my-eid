@@ -50,7 +50,32 @@ export function OrderProvider({ children }: { children: ReactNode }) {
         try {
           const apiOrdersResp = await orderService.getMyOrders();
           const apiOrders = apiOrdersResp?.data || [];
-          setOrders(apiOrders);
+          const normalize = (o: any) => {
+            const customer = o.customer ?? o.user ?? {
+              name: o.name,
+              email: o.email,
+              phone: o.phone,
+            };
+            const subtotal = Number(o.subtotal ?? o.subTotal ?? 0) || 0;
+            const deliveryCharge = Number(o.deliveryCharge ?? o.delivery_charge ?? 0) || 0;
+            const total = Number(o.totalAmount ?? o.total ?? o.total_amount ?? subtotal + deliveryCharge) || 0;
+            const items = Array.isArray(o.items)
+              ? o.items.map((it: any) => ({
+                  ...it,
+                  price: Number(it.price) || 0,
+                }))
+              : [];
+            return {
+              ...o,
+              customer,
+              subtotal,
+              deliveryCharge,
+              total,
+              items,
+            } as Order;
+          };
+
+          setOrders(apiOrders.map(normalize));
         } catch {
           setOrders(loadOrders());
         }
@@ -67,15 +92,49 @@ export function OrderProvider({ children }: { children: ReactNode }) {
     subtotal: number,
   ): Promise<Order> => {
     try {
-      const newOrderResp = await orderService.create({
-        items,
-        customer,
-        subtotal,
-      });
+      // Backend expects only the customer fields for order creation
+      const payload: any = {
+        name: String(customer.name || "").trim(),
+        email: customer.email ? String(customer.email).trim() : undefined,
+        phone: String(customer.phone || "").trim(),
+        address: String(customer.address || "").trim(),
+        district: String(customer.district || "").trim(),
+        notes: customer.notes ? String(customer.notes).trim() : undefined,
+      };
+
+      // Include items in payload if available so backend receives full order info.
+      if (Array.isArray(items) && items.length > 0) {
+        payload.items = items.map((i) => ({
+          productId: i.productId,
+          name: i.name,
+          price: Number(i.price) || 0,
+          quantity: Number(i.quantity) || 1,
+          size: i.size,
+          image: i.image,
+          slug: i.slug,
+        }));
+      }
+
+      const newOrderResp = await orderService.create(payload);
       const newOrder = newOrderResp?.data;
       if (newOrder) {
-        setOrders((prev) => [newOrder, ...prev]);
-        return newOrder;
+        // normalize incoming order
+        const normalized = {
+          ...newOrder,
+          customer: newOrder.customer ?? newOrder.user ?? {
+            name: newOrder.name,
+            email: newOrder.email,
+            phone: newOrder.phone,
+          },
+          subtotal: Number(newOrder.subtotal ?? newOrder.subTotal ?? 0) || 0,
+          deliveryCharge: Number(newOrder.deliveryCharge ?? newOrder.delivery_charge ?? 0) || 0,
+          total: Number(newOrder.totalAmount ?? newOrder.total ?? 0) || 0,
+          items: Array.isArray(newOrder.items)
+            ? newOrder.items.map((it: any) => ({ ...it, price: Number(it.price) || 0 }))
+            : [],
+        } as Order;
+        setOrders((prev) => [normalized, ...prev]);
+        return normalized;
       }
       throw new Error("Failed to create order");
     } catch {
@@ -119,7 +178,18 @@ export function OrderProvider({ children }: { children: ReactNode }) {
   };
 
   const getOrdersByEmail = (email: string) =>
-    orders.filter((o) => o.customer.email === email);
+    orders.filter((o) => {
+      // Support multiple shapes returned from the API: `customer`, `user`, or top-level email
+      const custEmail =
+        // preferred normalized shape
+        (o as any).customer?.email ||
+        // some backends return `user` nested
+        (o as any).user?.email ||
+        // or have email/name at top-level
+        (o as any).email ||
+        null;
+      return custEmail === email;
+    });
 
   const getOrderById = (id: string) => orders.find((o) => o.id === id);
 

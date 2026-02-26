@@ -121,20 +121,21 @@ function AccountContent() {
           ) : (
             <div className="overflow-x-auto rounded-lg border border-border/60">
               <Table>
-                <TableHeader>
+                  <TableHeader>
                   <TableRow>
                     <TableHead>Order ID</TableHead>
                     <TableHead>Date</TableHead>
                     <TableHead>Items</TableHead>
                     <TableHead>Total</TableHead>
                     <TableHead>Status</TableHead>
+                    <TableHead>Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {orders.map((order) => (
                     <TableRow key={order.id}>
                       <TableCell className="font-mono text-xs font-medium">
-                        {order.id}
+                        {order.orderId ?? order.id}
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">
                         {new Date(order.createdAt).toLocaleDateString("en-PK", {
@@ -148,7 +149,7 @@ function AccountContent() {
                         {order.items.length !== 1 ? "s" : ""}
                       </TableCell>
                       <TableCell className="text-sm font-medium">
-                        {formatPrice(order.total)}
+                        {formatPrice(order.total ?? order.totalAmount ?? 0)}
                       </TableCell>
                       <TableCell>
                         <span
@@ -156,6 +157,13 @@ function AccountContent() {
                         >
                           {order.status}
                         </span>
+                      </TableCell>
+                      <TableCell>
+                        <Button size="sm" asChild>
+                          <Link href={`/account/orders/${order.id}`}>
+                            Details
+                          </Link>
+                        </Button>
                       </TableCell>
                     </TableRow>
                   ))}

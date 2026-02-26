@@ -283,25 +283,25 @@ export const banners: Banner[] = [
 
 export const defaultSettings: StoreSettings = {
   storeName: "Eid Collection",
-  storePhone: "+92 300 1234567",
-  storeEmail: "info@eidcollection.pk",
+  storePhone: "+880 171 0000000",
+  storeEmail: "info@eidcollection.bd",
   deliveryCharge: 250,
   freeDeliveryThreshold: 5000,
 }
 
 export const districts = [
-  "Lahore",
-  "Karachi",
-  "Islamabad",
-  "Rawalpindi",
-  "Faisalabad",
-  "Multan",
-  "Peshawar",
-  "Quetta",
-  "Sialkot",
-  "Gujranwala",
-  "Hyderabad",
-  "Bahawalpur",
+  "Dhaka",
+  "Chattogram",
+  "Khulna",
+  "Rajshahi",
+  "Sylhet",
+  "Barishal",
+  "Rangpur",
+  "Mymensingh",
+  "Cox's Bazar",
+  "Narayanganj",
+  "Gazipur",
+  "Comilla",
 ]
 
 export function getProductBySlug(slug: string): Product | undefined {
@@ -320,6 +320,8 @@ export function getCategoryBySlug(slug: string): Category | undefined {
   return categories.find((c) => c.slug === slug)
 }
 
-export function formatPrice(price: number): string {
-  return `BDT. ${price.toLocaleString("en-PK")}`
+export function formatPrice(price: number | string | undefined | null): string {
+  const n = Number(price ?? 0)
+  if (Number.isNaN(n)) return `BDT. 0.00`
+  return `BDT. ${n.toLocaleString("en-BD", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 }
