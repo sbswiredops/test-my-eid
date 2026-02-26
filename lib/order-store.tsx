@@ -48,14 +48,33 @@ export function OrderProvider({ children }: { children: ReactNode }) {
     const fetchOrders = async () => {
       if (user) {
         try {
-          const apiOrdersResp = await orderService.getMyOrders();
-          const apiOrders = apiOrdersResp?.data || [];
+          // If the logged-in user is an admin, fetch all orders, otherwise fetch only their orders
+          const apiOrdersResp =
+            (user as any)?.role === "ADMIN"
+              ? await orderService.getAll()
+              : await orderService.getMyOrders();
+          const apiOrdersRaw = apiOrdersResp?.data ?? [];
+          // Support multiple response shapes:
+          // - Array of orders: []
+          // - Paginated object: { items: [], total, page }
+          // - Wrapped data object: { data: [] }
+          const apiOrders = Array.isArray(apiOrdersRaw)
+            ? apiOrdersRaw
+            : Array.isArray((apiOrdersRaw as any).items)
+            ? (apiOrdersRaw as any).items
+            : Array.isArray((apiOrdersRaw as any).data)
+            ? (apiOrdersRaw as any).data
+            : [];
           const normalize = (o: any) => {
-            const customer = o.customer ?? o.user ?? {
-              name: o.name,
-              email: o.email,
-              phone: o.phone,
-            };
+            const customer = {
+              name: o.customer?.name ?? o.user?.name ?? o.name ?? "",
+              email: o.customer?.email ?? o.user?.email ?? o.email ?? "",
+              phone: o.customer?.phone ?? o.user?.phone ?? o.phone ?? "",
+              address:
+                o.customer?.address ?? o.user?.address ?? o.address ?? o.addr ?? "",
+              district: o.customer?.district ?? o.user?.district ?? o.district ?? "",
+              notes: o.customer?.notes ?? o.user?.notes ?? o.notes ?? "",
+            } as any;
             const subtotal = Number(o.subtotal ?? o.subTotal ?? 0) || 0;
             const deliveryCharge = Number(o.deliveryCharge ?? o.delivery_charge ?? 0) || 0;
             const total = Number(o.totalAmount ?? o.total ?? o.total_amount ?? subtotal + deliveryCharge) || 0;
@@ -116,15 +135,23 @@ export function OrderProvider({ children }: { children: ReactNode }) {
       }
 
       const newOrderResp = await orderService.create(payload);
-      const newOrder = newOrderResp?.data;
+        const newOrder = newOrderResp?.data;
       if (newOrder) {
         // normalize incoming order
         const normalized = {
           ...newOrder,
-          customer: newOrder.customer ?? newOrder.user ?? {
-            name: newOrder.name,
-            email: newOrder.email,
-            phone: newOrder.phone,
+          customer: {
+            name:
+              newOrder.customer?.name ?? newOrder.user?.name ?? newOrder.name ?? "",
+            email:
+              newOrder.customer?.email ?? newOrder.user?.email ?? newOrder.email ?? "",
+            phone:
+              newOrder.customer?.phone ?? newOrder.user?.phone ?? newOrder.phone ?? "",
+            address:
+              newOrder.customer?.address ?? newOrder.user?.address ?? newOrder.address ?? "",
+            district:
+              newOrder.customer?.district ?? newOrder.user?.district ?? newOrder.district ?? "",
+            notes: newOrder.customer?.notes ?? newOrder.user?.notes ?? newOrder.notes ?? "",
           },
           subtotal: Number(newOrder.subtotal ?? newOrder.subTotal ?? 0) || 0,
           deliveryCharge: Number(newOrder.deliveryCharge ?? newOrder.delivery_charge ?? 0) || 0,

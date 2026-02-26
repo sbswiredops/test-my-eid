@@ -35,7 +35,6 @@ const statusColors: Record<string, string> = {
 const statusOptions: OrderStatus[] = [
   "pending",
   "confirmed",
-  "processing",
   "shipped",
   "delivered",
   "cancelled",
@@ -48,10 +47,11 @@ export default function AdminOrders() {
   const [viewingOrder, setViewingOrder] = useState<string | null>(null)
 
   const filtered = orders.filter((order) => {
+    const orderIdentifier = (order as any).orderId || order.id || "";
     const matchesSearch =
-      order.id.toLowerCase().includes(search.toLowerCase()) ||
-      order.customer.name.toLowerCase().includes(search.toLowerCase()) ||
-      order.customer.email.toLowerCase().includes(search.toLowerCase())
+      orderIdentifier.toString().toLowerCase().includes(search.toLowerCase()) ||
+      order.customer?.name?.toLowerCase().includes(search.toLowerCase()) ||
+      order.customer?.email?.toLowerCase().includes(search.toLowerCase())
     const matchesStatus =
       filterStatus === "all" || order.status === filterStatus
     return matchesSearch && matchesStatus
@@ -133,7 +133,7 @@ export default function AdminOrders() {
                     key={order.id}
                     className="border-b last:border-0 hover:bg-muted/30"
                   >
-                    <td className="p-4 font-mono text-xs">{order.id}</td>
+                    <td className="p-4 font-mono text-xs">{order.orderId || order.id}</td>
                     <td className="p-4">
                       <div>
                         <p className="font-medium text-foreground">
@@ -212,7 +212,7 @@ export default function AdminOrders() {
         <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
           <DialogHeader>
             <DialogTitle className="font-serif">
-              Order {selectedOrder?.id}
+              Order {selectedOrder?.orderId || selectedOrder?.id}
             </DialogTitle>
           </DialogHeader>
           {selectedOrder && (
