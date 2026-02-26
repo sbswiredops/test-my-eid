@@ -28,10 +28,45 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
+// Helper: decode JWT and check expiry
+function isTokenExpired(token: string): boolean {
+  try {
+    const payload = JSON.parse(atob(token.split(".")[1]));
+    return payload.exp * 1000 < Date.now();
+  } catch {
+    return true;
+  }
+}
+
+async function refreshAccessToken() {
+  const refreshToken = localStorage.getItem("refresh_token");
+  if (!refreshToken) return null;
+  try {
+    // Correct usage: call authService.refresh(refreshToken)
+    const res = await authService.refresh(refreshToken);
+    const payload = res?.data ?? {};
+    const accessToken = payload.accessToken;
+    const newRefreshToken = payload.refreshToken;
+    const userData = payload.user;
+    if (accessToken) {
+      localStorage.setItem("access_token", accessToken);
+    }
+    if (newRefreshToken) {
+      localStorage.setItem("refresh_token", newRefreshToken);
+    }
+    if (userData) {
+      localStorage.setItem("current-user", JSON.stringify(userData));
+    }
+    return accessToken;
+  } catch {
+    return null;
+  }
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<Omit<User, "password"> | null>(null);
-  // No mock fallback — rely on backend only
 
+  // On mount, load user
   useEffect(() => {
     try {
       const saved = localStorage.getItem("current-user");
@@ -43,6 +78,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  // Token auto-refresh effect
+  useEffect(() => {
+    const interval = setInterval(async () => {
+      const accessToken = localStorage.getItem("access_token");
+      if (accessToken && isTokenExpired(accessToken)) {
+        const newToken = await refreshAccessToken();
+        if (!newToken) {
+          // If refresh fails, logout
+          logout();
+        }
+      }
+    }, 60 * 1000); // Check every 1 min
+    return () => clearInterval(interval);
+  }, []);
+
   const login = async (email: string, password: string) => {
     try {
       const response = await authService.login({ email, password });
@@ -52,11 +102,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         response?.accessToken ??
         response?.data?.accessToken ??
         response?.raw?.data?.accessToken;
+      const refreshToken =
+        response?.refreshToken ??
+        response?.data?.refreshToken ??
+        response?.raw?.data?.refreshToken;
       if (userData) {
         setUser(userData);
         localStorage.setItem("current-user", JSON.stringify(userData));
         if (accessToken) {
-          localStorage.setItem("access_token", accessToken); // <-- Add this line
+          localStorage.setItem("access_token", accessToken);
+        }
+        if (refreshToken) {
+          localStorage.setItem("refresh_token", refreshToken);
         }
         return { success: true };
       } else {
@@ -89,6 +146,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         resp?.accessToken ??
         resp?.data?.accessToken ??
         resp?.raw?.data?.accessToken;
+      let refreshToken =
+        resp?.refreshToken ??
+        resp?.data?.refreshToken ??
+        resp?.raw?.data?.refreshToken;
 
       // If backend doesn't return an accessToken/user on register, attempt login
       if (
@@ -111,6 +172,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             loginRes.accessToken ??
             loginRes?.data?.accessToken ??
             loginRes?.raw?.data?.accessToken;
+          refreshToken =
+            refreshToken ??
+            loginRes.refreshToken ??
+            loginRes?.data?.refreshToken ??
+            loginRes?.raw?.data?.refreshToken;
         } catch {
           // ignore — will be handled below as registration failure
         }
@@ -127,7 +193,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (userData)
         localStorage.setItem("current-user", JSON.stringify(userData));
       if (accessToken) {
-        localStorage.setItem("access_token", accessToken); // <-- Add this line
+        localStorage.setItem("access_token", accessToken);
+      }
+      if (refreshToken) {
+        localStorage.setItem("refresh_token", refreshToken);
       }
       return { success: true };
     } catch (error: any) {
@@ -144,6 +213,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
     localStorage.removeItem("current-user");
     localStorage.removeItem("access_token");
+    localStorage.removeItem("refresh_token");
   };
 
   const updateProfile = async (data: Partial<User>) => {

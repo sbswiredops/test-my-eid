@@ -1,42 +1,83 @@
-"use client"
+"use client";
 
-import Link from "next/link"
-import { useEffect, useState, useCallback } from "react"
-import { banners } from "@/lib/data"
-import { Button } from "@/components/ui/button"
-import { ChevronLeft, ChevronRight } from "lucide-react"
-import { cn } from "@/lib/utils"
+import Link from "next/link";
+import { useEffect, useState, useCallback } from "react";
+import { useHeroBanners } from "@/hooks/use-api";
+import { Button } from "@/components/ui/button";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export function HeroBanner() {
-  const [current, setCurrent] = useState(0)
-  const activeBanners = banners.filter((b) => b.active)
+  const [current, setCurrent] = useState(0);
+  const { data: bannersData } = useHeroBanners();
+
+  // Normalize API shapes: array, { items: [] }, { data: [] }
+  const banners = (() => {
+    if (!bannersData) return [] as any[];
+    if (Array.isArray(bannersData)) return bannersData as any[];
+    if (
+      typeof bannersData === "object" &&
+      bannersData !== null &&
+      "items" in bannersData &&
+      Array.isArray((bannersData as any).items)
+    )
+      return (bannersData as any).items as any[];
+    if (
+      typeof bannersData === "object" &&
+      bannersData !== null &&
+      "data" in bannersData &&
+      Array.isArray((bannersData as any).data)
+    )
+      return (bannersData as any).data as any[];
+    return [] as any[];
+  })()
+    // map common field names to expected ones
+    .map((b, idx) => ({
+      id: b.id ?? b._id ?? b.slug ?? `banner-${idx}`,
+      title: b.title ?? b.name ?? "",
+      subtitle: b.subtitle ?? b.desc ?? b.description ?? "",
+      image: b.image ?? b.img ?? b.imageUrl ?? "",
+      ctaText: b.ctaText ?? b.cta ?? b.buttonText ?? "",
+      ctaLink: b.ctaLink ?? b.ctaLinkUrl ?? b.link ?? "/",
+      index: b.index ?? b.order ?? b.priority ?? 0,
+      active:
+        typeof b.active === "boolean" ? b.active : !!b.isActive || !!b.enabled,
+    }))
+    // sort by index if provided
+    .sort((a, b) => (a.index ?? 0) - (b.index ?? 0));
+
+  const activeBanners = banners; // show all returned banners
 
   const next = useCallback(() => {
-    setCurrent((prev) => (prev + 1) % activeBanners.length)
-  }, [activeBanners.length])
+    if (activeBanners.length === 0) return;
+    setCurrent((prev) => (prev + 1) % activeBanners.length);
+  }, [activeBanners.length]);
 
   const prev = useCallback(() => {
+    if (activeBanners.length === 0) return;
     setCurrent(
-      (prev) => (prev - 1 + activeBanners.length) % activeBanners.length
-    )
-  }, [activeBanners.length])
+      (prev) => (prev - 1 + activeBanners.length) % activeBanners.length,
+    );
+  }, [activeBanners.length]);
 
   useEffect(() => {
-    const timer = setInterval(next, 5000)
-    return () => clearInterval(timer)
-  }, [next])
+    if (activeBanners.length === 0) return;
+    const timer = setInterval(next, 5000);
+    return () => clearInterval(timer);
+  }, [next, activeBanners.length]);
 
-  if (activeBanners.length === 0) return null
+  // If there are no banners, don't render
+  if (activeBanners.length === 0) return null;
 
   return (
     <section className="relative overflow-hidden" aria-label="Hero banner">
-      <div className="relative h-[400px] sm:h-[500px] lg:h-[560px]">
+      <div className="relative h-100 sm:h-125 lg:h-140">
         {activeBanners.map((banner, i) => (
           <div
             key={banner.id}
             className={cn(
               "absolute inset-0 transition-opacity duration-700",
-              i === current ? "opacity-100" : "opacity-0 pointer-events-none"
+              i === current ? "opacity-100" : "opacity-0 pointer-events-none",
             )}
           >
             <img
@@ -44,7 +85,7 @@ export function HeroBanner() {
               alt={banner.title}
               className="h-full w-full object-cover"
             />
-            <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/30 to-transparent" />
+            <div className="absolute inset-0 bg-linear-to-r from-black/60 via-black/30 to-transparent" />
             <div className="absolute inset-0 flex items-center">
               <div className="mx-auto w-full max-w-7xl px-4">
                 <div className="max-w-lg">
@@ -92,12 +133,12 @@ export function HeroBanner() {
             onClick={() => setCurrent(i)}
             className={cn(
               "h-2 rounded-full transition-all",
-              i === current ? "w-6 bg-white" : "w-2 bg-white/50"
+              i === current ? "w-6 bg-white" : "w-2 bg-white/50",
             )}
             aria-label={`Go to slide ${i + 1}`}
           />
         ))}
       </div>
     </section>
-  )
+  );
 }

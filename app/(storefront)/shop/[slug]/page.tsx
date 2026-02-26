@@ -1,38 +1,38 @@
-"use client"
+"use client";
 
-import { use } from "react"
-import { notFound } from "next/navigation"
-import {
-  getProductBySlug as getStaticProductBySlug,
-  getProductsByCategory,
-  formatPrice,
-  products as staticProducts,
-} from "@/lib/data"
-import { useProduct } from "@/hooks/use-api"
-import { ProductDetail } from "@/components/product-detail"
-import { ProductCard } from "@/components/product-card"
+import { use } from "react";
+import { notFound } from "next/navigation";
+import { useProducts } from "@/hooks/use-api";
+import { useProduct } from "@/hooks/use-api";
+import { ProductDetail } from "@/components/product-detail";
+import { ProductCard } from "@/components/product-card";
 
 interface Props {
-  params: Promise<{ slug: string }>
+  params: Promise<{ slug: string }>;
 }
 
 export default function ProductPage({ params }: Props) {
-  const { slug } = use(params)
-  const { data: apiProduct, isLoading } = useProduct(slug)
+  const { slug } = use(params);
+  const { data: apiProduct, isLoading } = useProduct(slug);
 
-  const product = apiProduct || getStaticProductBySlug(slug)
+  const product = apiProduct;
 
   if (!product && !isLoading) {
-    notFound()
+    notFound();
   }
 
   if (isLoading && !product) {
-    return <div className="mx-auto max-w-7xl px-4 py-8">Loading...</div>
+    return <div className="mx-auto max-w-7xl px-4 py-8">Loading...</div>;
   }
 
-  const related = getProductsByCategory(product.category)
-    .filter((p) => p.id !== product.id)
-    .slice(0, 4)
+  const { data: relatedData } = useProducts({
+    category: product?.category,
+    limit: 4,
+  });
+
+  const related = (relatedData?.data || relatedData || [])
+    .filter((p) => p.id !== product?.id)
+    .slice(0, 4);
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8">
@@ -52,5 +52,5 @@ export default function ProductPage({ params }: Props) {
         </section>
       )}
     </div>
-  )
+  );
 }

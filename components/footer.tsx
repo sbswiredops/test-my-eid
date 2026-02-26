@@ -1,7 +1,11 @@
-import Link from "next/link"
-import { categories } from "@/lib/data"
+"use client";
+
+import Link from "next/link";
+import { useCategories } from "@/hooks/use-api";
 
 export function Footer() {
+  const { data: categoriesData } = useCategories();
+  const categories = categoriesData || [];
   return (
     <footer className="border-t border-border/60 bg-card">
       <div className="mx-auto max-w-7xl px-4 py-12">
@@ -100,9 +104,7 @@ export function Footer() {
               Contact
             </h3>
             <ul className="flex flex-col gap-2">
-              <li className="text-sm text-muted-foreground">
-                +92 300 1234567
-              </li>
+              <li className="text-sm text-muted-foreground">+92 300 1234567</li>
               <li className="text-sm text-muted-foreground">
                 info@eidcollection.pk
               </li>
@@ -123,5 +125,5 @@ export function Footer() {
         </div>
       </div>
     </footer>
-  )
+  );
 }

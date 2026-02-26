@@ -1,7 +1,7 @@
 "use client";
 
 import { useOrders } from "@/lib/order-store";
-import { products as staticProducts, formatPrice } from "@/lib/data";
+import { formatPrice } from "@/lib/data";
 import { useAdminDashboard } from "@/hooks/use-api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -35,7 +35,7 @@ export default function AdminDashboard() {
     dashboardData?.deliveredOrders ??
     localOrders.filter((o) => o.status === "delivered").length;
   const totalOrdersCount = dashboardData?.totalOrders ?? localOrders.length;
-  const productsCount = dashboardData?.totalProducts ?? staticProducts.length;
+  const productsCount = dashboardData?.totalProducts ?? 0;
 
   // Define the type for an order (adjust fields as needed)
   type Order = {

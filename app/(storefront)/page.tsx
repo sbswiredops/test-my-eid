@@ -5,11 +5,12 @@ import { Button } from "@/components/ui/button";
 import { ProductCard } from "@/components/product-card";
 import { HeroBanner } from "@/components/hero-banner";
 import {
-  categories as staticCategories,
-  getFeaturedProducts,
-  products as staticProducts,
-} from "@/lib/data";
-import { useProducts, useCategories } from "@/hooks/use-api";
+  useProducts,
+  useCategories,
+  useApi,
+  useMiddleBanners,
+  useBottomBanners,
+} from "@/hooks/use-api";
 import { Truck, Shield, RotateCcw, Phone } from "lucide-react";
 
 const features = [
@@ -39,22 +40,32 @@ export default function HomePage() {
   const { data: productsData } = useProducts();
   const { data: categoriesData } = useCategories();
 
-  const categories = Array.isArray(categoriesData)
-    ? categoriesData
-    : staticCategories;
-  const products = Array.isArray(productsData) ? productsData : staticProducts;
+  const categories = Array.isArray(categoriesData) ? categoriesData : [];
+  const products = Array.isArray(productsData) ? productsData : [];
 
-  const featured = Array.isArray(products)
-    ? products.filter((p: any) => p.featured)
+  // Home categories and banners
+  const { data: homeCategoriesData } = useApi<any[]>("/homecategory");
+  const homeCategories = Array.isArray(homeCategoriesData)
+    ? homeCategoriesData
     : [];
-  const newArrivals = Array.isArray(products)
-    ? [...products]
-        .sort(
-          (a, b) =>
-            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
-        )
-        .slice(0, 4)
-    : [];
+
+  const { data: middleBannersData } = useMiddleBanners();
+  const middleBanners = Array.isArray(middleBannersData)
+    ? middleBannersData
+    : middleBannersData?.items || middleBannersData?.data || [];
+
+  const { data: bottomBannersData } = useBottomBanners();
+  const bottomBanners = Array.isArray(bottomBannersData)
+    ? bottomBannersData
+    : bottomBannersData?.items || bottomBannersData?.data || [];
+
+  const featured = products.filter((p: any) => p.featured);
+  const newArrivals = [...products]
+    .sort(
+      (a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+    )
+    .slice(0, 4);
 
   return (
     <div className="flex flex-col">
@@ -66,7 +77,7 @@ export default function HomePage() {
         <div className="mx-auto grid max-w-7xl grid-cols-2 gap-4 px-4 py-6 lg:grid-cols-4">
           {features.map((feature) => (
             <div key={feature.title} className="flex items-center gap-3">
-              <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-primary/10">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10">
                 <feature.icon className="h-5 w-5 text-primary" />
               </div>
               <div>
@@ -81,6 +92,117 @@ export default function HomePage() {
           ))}
         </div>
       </section>
+
+      {/* Home Categories + Middle / Bottom Banners */}
+      {homeCategories.length > 0 && (
+        <section className="mx-auto w-full max-w-7xl px-4 py-12">
+          <div className="mb-8 text-center">
+            <h2 className="font-serif text-2xl font-bold tracking-tight text-foreground sm:text-3xl text-balance">
+              Collections
+            </h2>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Curated collections for this season
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {homeCategories.slice(0, 2).map((hc: any, i: number) => (
+              <div
+                key={hc.id ?? hc.slug ?? i}
+                className="group relative overflow-hidden rounded-lg"
+              >
+                <div className="aspect-3/4 overflow-hidden">
+                  <img
+                    src={hc.image}
+                    alt={hc.name}
+                    className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                  />
+                </div>
+                <div className="absolute inset-0 flex flex-col items-center justify-end bg-linear-to-t from-black/70 via-black/20 to-transparent p-4">
+                  <h3 className="text-center font-serif text-lg font-bold text-white sm:text-xl">
+                    {hc.name}
+                  </h3>
+                  {hc.description && (
+                    <p className="mt-1 text-xs text-white/80">
+                      {hc.description}
+                    </p>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Insert middle banner after the first two home categories */}
+          {homeCategories.length > 2 && middleBanners.length > 0 && (
+            <div className="mt-10">
+              {middleBanners.map((b: any, idx: number) => (
+                <div
+                  key={b.id ?? idx}
+                  className="mb-6 w-full overflow-hidden rounded-lg"
+                >
+                  <a href={b.ctaLink ?? b.link ?? "#"}>
+                    <img
+                      src={b.image ?? b.img}
+                      alt={b.title ?? ""}
+                      className="w-full object-cover"
+                    />
+                  </a>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* If there are remaining home categories beyond two, show them separately */}
+          {homeCategories.length > 2 && (
+            <div className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {homeCategories.slice(2).map((hc: any, i: number) => (
+                <div
+                  key={hc.id ?? hc.slug ?? `hc-${i}`}
+                  className="group relative overflow-hidden rounded-lg"
+                >
+                  <div className="aspect-3/4 overflow-hidden">
+                    <img
+                      src={hc.image}
+                      alt={hc.name}
+                      className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    />
+                  </div>
+                  <div className="absolute inset-0 flex flex-col items-center justify-end bg-linear-to-t from-black/70 via-black/20 to-transparent p-4">
+                    <h3 className="text-center font-serif text-lg font-bold text-white sm:text-xl">
+                      {hc.name}
+                    </h3>
+                    {hc.description && (
+                      <p className="mt-1 text-xs text-white/80">
+                        {hc.description}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Bottom banners */}
+          {bottomBanners.length > 0 && (
+            <div className="mt-10">
+              {bottomBanners.map((b: any, idx: number) => (
+                <div
+                  key={b.id ?? idx}
+                  className="mb-6 w-full overflow-hidden rounded-lg"
+                >
+                  <a href={b.ctaLink ?? b.link ?? "#"}>
+                    <img
+                      src={b.image ?? b.img}
+                      alt={b.title ?? ""}
+                      className="w-full object-cover"
+                    />
+                  </a>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+      )}
 
       {/* Shop by Category */}
       <section className="mx-auto w-full max-w-7xl px-4 py-12">
@@ -99,14 +221,14 @@ export default function HomePage() {
               href={`/shop?category=${cat.slug}`}
               className="group relative overflow-hidden rounded-lg"
             >
-              <div className="aspect-[3/4] overflow-hidden">
+              <div className="aspect-3/4 overflow-hidden">
                 <img
                   src={cat.image}
                   alt={cat.name}
                   className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
                 />
               </div>
-              <div className="absolute inset-0 flex flex-col items-center justify-end bg-gradient-to-t from-black/70 via-black/20 to-transparent p-4">
+              <div className="absolute inset-0 flex flex-col items-center justify-end bg-linear-to-t from-black/70 via-black/20 to-transparent p-4">
                 <h3 className="text-center font-serif text-lg font-bold text-white sm:text-xl">
                   {cat.name}
                 </h3>

@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { banners as staticBanners } from "@/lib/data";
 import {
   useHeroBanners,
   useMiddleBanners,
@@ -67,7 +66,7 @@ export default function AdminBanners() {
   // Ensure each list is always an array to simplify rendering and improve
   // responsiveness on small screens (avoid rendering null/objects)
   const bannerLists = {
-    hero: Array.isArray(heroList) ? heroList.map(normalize) : staticBanners,
+    hero: Array.isArray(heroList) ? heroList.map(normalize) : [],
     middle: Array.isArray(middleList) ? middleList.map(normalize) : [],
     bottom: Array.isArray(bottomList) ? bottomList.map(normalize) : [],
     give: Array.isArray(giveList) ? giveList.map(normalize) : [],

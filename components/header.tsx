@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useCart } from "@/lib/cart-store";
 import { useAuth } from "@/lib/auth-store";
-import { categories } from "@/lib/data";
+import { useCategories } from "@/hooks/use-api";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 import { CartSheet } from "@/components/cart-sheet";
@@ -34,11 +34,13 @@ export function Header() {
   const pathname = usePathname();
   const { itemCount } = useCart();
   const { user, logout } = useAuth();
+  const { data: categoriesData } = useCategories();
+  const categories = categoriesData || [];
   const [mobileOpen, setMobileOpen] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border/60 bg-background/95 backdrop-blur-md supports-[backdrop-filter]:bg-background/80">
+    <header className="sticky top-0 z-50 w-full border-b border-border/60 bg-background/95 backdrop-blur-md supports-backdrop-filter:bg-background/80">
       {/* Top announcement bar */}
       <div className="bg-primary text-primary-foreground">
         <div className="mx-auto flex max-w-7xl items-center justify-center px-4 py-1.5">
