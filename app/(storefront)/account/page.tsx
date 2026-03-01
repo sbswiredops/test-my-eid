@@ -102,7 +102,7 @@ function AccountContent() {
         animate={{ opacity: 1, y: 0 }}
         className="mx-auto max-w-md px-4 py-16 text-center"
       >
-        <div className="rounded-2xl bg-gradient-to-b from-muted/50 to-muted p-8">
+        <div className="rounded-2xl bg-linear-to-b from-muted/50 to-muted p-8">
           <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-primary/10">
             <User className="h-10 w-10 text-primary" />
           </div>
