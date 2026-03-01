@@ -49,7 +49,7 @@ export function UnderDevelopment({
                   repeat: Infinity,
                   ease: "easeInOut",
                 }}
-                className="w-32 h-32 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center relative"
+                className="w-32 h-32 rounded-full bg-linear-to-br from-primary/20 to-primary/5 flex items-center justify-center relative"
               >
                 <Construction className="w-16 h-16 text-primary" />
 
@@ -107,7 +107,7 @@ export function UnderDevelopment({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.3 }}
-            className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-primary via-primary/80 to-primary bg-clip-text text-transparent"
+            className="text-4xl md:text-5xl font-bold mb-4 bg-linear-to-r from-primary via-primary/80 to-primary bg-clip-text text-transparent"
           >
             {title}
           </motion.h1>
@@ -165,7 +165,7 @@ export function UnderDevelopment({
               <Button
                 variant="default"
                 size="lg"
-                className="min-w-[200px]"
+                className="min-w-50"
                 onClick={() => router.push("/")}
               >
                 <ArrowLeft className="mr-2 h-4 w-4" />
@@ -176,7 +176,7 @@ export function UnderDevelopment({
             <Button
               variant="outline"
               size="lg"
-              className="min-w-[200px]"
+              className="min-w-50"
               onClick={() => router.push("/shop")}
             >
               Browse Shop
