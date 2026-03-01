@@ -211,7 +211,8 @@ export interface Order {
   createdAt: string;
   updatedAt?: string;
   userId?: string;
-    orderId?: string;
+  orderId?: string;
+  totalAmount?: number;
 
 }
 
