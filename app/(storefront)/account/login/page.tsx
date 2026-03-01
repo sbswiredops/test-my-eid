@@ -113,7 +113,7 @@ export default function LoginPage() {
           Demo Accounts:
         </p>
         <p className="mt-1 text-xs text-muted-foreground">
-          Admin: admin@eidcollection.pk / admin123
+          Admin: mridoy031@gmail.com / Password123!
         </p>
         <p className="text-xs text-muted-foreground">
           Or create a new customer account

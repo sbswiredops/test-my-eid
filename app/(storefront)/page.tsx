@@ -231,7 +231,7 @@ export default function HomePage() {
                                 href={`/shop?category=${cat.slug}`}
                                 className="group flex flex-col overflow-hidden rounded-lg border border-border/60 bg-card transition-all hover:shadow-md"
                               >
-                                <div className="relative aspect-[3/4] overflow-hidden bg-muted">
+                                <div className="relative aspect-3/4 overflow-hidden bg-muted">
                                   <img
                                     src={cat.image}
                                     alt={cat.name}
@@ -395,7 +395,7 @@ export default function HomePage() {
                                 href={`/shop?category=${cat.slug}`}
                                 className="group flex flex-col overflow-hidden rounded-lg border border-border/60 bg-card transition-all hover:shadow-md"
                               >
-                                <div className="relative aspect-[3/4] overflow-hidden bg-muted">
+                                <div className="relative aspect-3/4 overflow-hidden bg-muted">
                                   <img
                                     src={cat.image}
                                     alt={cat.name}
