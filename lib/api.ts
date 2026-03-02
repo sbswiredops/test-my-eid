@@ -374,7 +374,11 @@ export class ApiClient {
     return this.handleResponse<T>(response);
   }
 
-  async upload<T>(endpoint: string, file: File | FormData, onProgress?: (progress: number) => void): Promise<ApiResponse<T>> {
+  async upload<T>(
+    endpoint: string,
+    file: File | FormData,
+    options?: { method?: string; onProgress?: (progress: number) => void }
+  ): Promise<ApiResponse<T>> {
     return new Promise((resolve, reject) => {
       const xhr = new XMLHttpRequest();
       const formData = file instanceof FormData ? file : new FormData();
@@ -382,6 +386,9 @@ export class ApiClient {
       if (!(file instanceof FormData)) {
         formData.append('file', file);
       }
+
+      const method = options?.method || 'POST';
+      const onProgress = options?.onProgress;
 
       if (onProgress) {
         xhr.upload.onprogress = (event) => {
@@ -417,7 +424,7 @@ export class ApiClient {
       xhr.onerror = () => reject(new Error('Upload failed'));
 
       const token = this.getAuthToken();
-      xhr.open('POST', this.joinUrl(endpoint));
+      xhr.open(method, this.joinUrl(endpoint));
       xhr.withCredentials = true;
 
       if (token) {

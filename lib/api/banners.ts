@@ -13,8 +13,8 @@ export class BannerService {
   }
 
   async updateHeroBanner(id: string, data: FormData): Promise<ApiResponse<Banner>> {
-    // Use upload helper to ensure multipart XHR upload (better compatibility)
-    return apiClient.upload<Banner>(API_CONFIG.ENDPOINTS.HEROBANNER_UPDATE(id), data);
+    // Use PUT for update, not POST
+    return apiClient.upload<Banner>(API_CONFIG.ENDPOINTS.HEROBANNER_UPDATE(id), data, { method: "PUT" });
   }
 
   async deleteHeroBanner(id: string): Promise<ApiResponse<null>> {
@@ -31,7 +31,7 @@ export class BannerService {
   }
 
   async updateBottomBanner(id: string, data: FormData): Promise<ApiResponse<Banner>> {
-    return apiClient.upload<Banner>(API_CONFIG.ENDPOINTS.HEROBANNER_BOTTOM_UPDATE(id), data);
+    return apiClient.upload<Banner>(API_CONFIG.ENDPOINTS.HEROBANNER_BOTTOM_UPDATE(id), data, { method: "PUT" });
   }
 
   async deleteBottomBanner(id: string): Promise<ApiResponse<null>> {
@@ -48,7 +48,7 @@ export class BannerService {
   }
 
   async updateMiddleBanner(id: string, data: FormData): Promise<ApiResponse<Banner>> {
-    return apiClient.upload<Banner>(API_CONFIG.ENDPOINTS.HEROBANNER_MIDDLE_UPDATE(id), data);
+    return apiClient.upload<Banner>(API_CONFIG.ENDPOINTS.HEROBANNER_MIDDLE_UPDATE(id), data, { method: "PUT" });
   }
 
   async deleteMiddleBanner(id: string): Promise<ApiResponse<null>> {
@@ -65,7 +65,7 @@ export class BannerService {
   }
 
   async updateGiveBanner(id: string, data: FormData): Promise<ApiResponse<Banner>> {
-    return apiClient.upload<Banner>(API_CONFIG.ENDPOINTS.HEROBANNER_GIVE_UPDATE(id), data);
+    return apiClient.upload<Banner>(API_CONFIG.ENDPOINTS.HEROBANNER_GIVE_UPDATE(id), data, { method: "PUT" });
   }
 
   async deleteGiveBanner(id: string): Promise<ApiResponse<null>> {
