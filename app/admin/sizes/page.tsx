@@ -247,11 +247,8 @@ export default function AdminSizesPage() {
         await productService.updateSize(editing.id as string, payload);
         toast.success("Size updated successfully");
       } else {
-        const promises = sizeEntries.map(async (entry) => {
-          return productService.createSize(buildPayload(entry));
-        });
-
-        await Promise.all(promises);
+        const payloads = sizeEntries.map((entry) => buildPayload(entry));
+        await productService.createSize(payloads);
         toast.success(
           `${sizeEntries.length} size${sizeEntries.length > 1 ? "s" : ""} created successfully`,
         );
