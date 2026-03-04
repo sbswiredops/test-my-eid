@@ -57,6 +57,14 @@ export class ProductService {
   async getSizes(): Promise<ApiResponse<any>> {
     return apiClient.get(API_CONFIG.ENDPOINTS.PRODUCT_SIZES);
   }
+
+  async getSizesByType(params?: Record<string, any>): Promise<ApiResponse<any>> {
+    return apiClient.get(API_CONFIG.ENDPOINTS.PRODUCT_SIZES_BY_TYPE, params);
+  }
+
+  async getSizeTypes(): Promise<ApiResponse<any>> {
+    return apiClient.get(API_CONFIG.ENDPOINTS.PRODUCT_SIZETYPES);
+  }
 }
 
 export const productService = new ProductService();

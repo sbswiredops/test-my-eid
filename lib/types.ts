@@ -5,10 +5,19 @@ export interface Category {
   id: string;
   name: string;
   slug: string;
-  description: string;
-  image: string;
-  featured?: boolean;
-  status?: string;
+  sizeDescription?: string; // Changed from 'size' to 'name' for consistency
+  length?: number;
+  chest?: number;
+  legOpening?: number;
+  thighRound?: number;
+  waist?: number;
+  sleeve?: number;
+  shoulder?: number;
+  halfThigh?: number;
+  hip?: number;
+  thigh?: number;
+  order?: number;
+  sizeType?: string[];
   parentId?: string;
   icon?: string;
   order?: number;
@@ -38,10 +47,18 @@ export interface UpdateCategoryRequest extends Partial<CreateCategoryRequest> {}
 // Product size types
 export interface ProductSize {
   id: string;
-  size: string; // Changed from 'size' to 'name' for consistency
-  sizeDescription?: string;
+  size: string;
+  sizeType?: string[]; // enum array from backend
   length?: number;
   chest?: number;
+  legOpening?: number;
+  thighRound?: number;
+  waist?: number;
+  sleeve?: number;
+  shoulder?: number;
+  halfThigh?: number;
+  hip?: number;
+  thigh?: number;
   order?: number;
   createdAt?: string;
   updatedAt?: string;

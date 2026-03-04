@@ -38,6 +38,8 @@ export const API_CONFIG = {
     PRODUCT_SIZE_BY_ID: (id: string) => `/products/size/${id}`, // GET
     PRODUCT_SIZE_DELETE: (id: string) => `/products/size/${id}`, // DELETE (Admin only)
     PRODUCT_SIZES: '/products/sizes', // GET
+    PRODUCT_SIZES_BY_TYPE: '/products/sizes-by-type', // GET
+    PRODUCT_SIZETYPES: '/products/sizetypes', // GET
 
     // Cart (6 endpoints)
     CART_ADD: '/cart/add', // POST
