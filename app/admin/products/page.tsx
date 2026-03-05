@@ -63,29 +63,39 @@ export default function AdminProducts() {
     : productsData && Array.isArray((productsData as any).items)
       ? (productsData as any).items
       : productsData &&
-          productsData.data &&
-          Array.isArray(productsData.data.items)
+        productsData.data &&
+        Array.isArray(productsData.data.items)
         ? productsData.data.items
         : [];
   const categories = Array.isArray(categoriesData) ? categoriesData : [];
 
-  // Sizes state
+  // Sizes and size types state
   const [sizes, setSizes] = useState<{ id: string; name: string }[]>([]);
+  const [sizeTypes, setSizeTypes] = useState<string[]>([]);
   useEffect(() => {
-    async function loadSizes() {
+    async function loadSizeData() {
       try {
-        const res = await productService.getSizes();
-        if (res && res.data && Array.isArray(res.data)) {
+        const [sizesRes, sizeTypesRes] = await Promise.all([
+          productService.getSizes(),
+          productService.getSizeTypes(),
+        ]);
+
+        if (sizesRes && sizesRes.data && Array.isArray(sizesRes.data)) {
           // Normalize size objects: API may return { size } field instead of { name }
           setSizes(
-            res.data.map((s: any) => ({ id: s.id, name: s.name ?? s.size })),
+            sizesRes.data.map((s: any) => ({ id: s.id, name: s.name ?? s.size })),
           );
+        }
+
+        if (sizeTypesRes && Array.isArray(sizeTypesRes.data)) {
+          setSizeTypes(sizeTypesRes.data as string[]);
         }
       } catch {
         setSizes([]);
+        setSizeTypes([]);
       }
     }
-    loadSizes();
+    loadSizeData();
   }, []);
 
   const [search, setSearch] = useState("");
@@ -98,6 +108,7 @@ export default function AdminProducts() {
   // Popover states
   const [categoryPopoverOpen, setCategoryPopoverOpen] = useState(false);
   const [sizePopoverOpen, setSizePopoverOpen] = useState(false);
+  const [sizeTypePopoverOpen, setSizeTypePopoverOpen] = useState(false);
 
   // Form state
   const [form, setForm] = useState({
@@ -110,6 +121,7 @@ export default function AdminProducts() {
     stockPerSize: "",
     categoryIds: [] as string[], // Changed to array for multiple categories
     sizeIds: [] as string[], // Changed to array for multiple sizes
+    sizeTypes: [] as string[],
     images: [] as string[],
     featured: false,
     tags: "",
@@ -126,6 +138,7 @@ export default function AdminProducts() {
       stockPerSize: "",
       categoryIds: [],
       sizeIds: [],
+      sizeTypes: [],
       images: [],
       featured: false,
       tags: "",
@@ -154,6 +167,11 @@ export default function AdminProducts() {
       sizeIds: Array.isArray(product.sizes)
         ? product.sizes.map((s: any) => s.id)
         : [],
+      sizeTypes: Array.isArray((product as any).sizeTypes)
+        ? (product as any).sizeTypes
+        : Array.isArray((product as any).sizeType)
+          ? (product as any).sizeType
+          : [],
       images: product.images || [],
       featured: !!(product as any).featured,
       tags: Array.isArray((product as any).tags)
@@ -181,9 +199,9 @@ export default function AdminProducts() {
     try {
       const tags = form.tags
         ? form.tags
-            .split(",")
-            .map((t) => t.trim())
-            .filter(Boolean)
+          .split(",")
+          .map((t) => t.trim())
+          .filter(Boolean)
         : [];
       const stockPerSize = form.stockPerSize
         ? JSON.parse(form.stockPerSize)
@@ -218,6 +236,9 @@ export default function AdminProducts() {
 
       // Sizes (multiple)
       form.sizeIds.forEach((id) => formData.append("sizeIds", id));
+
+      // Size types (multiple)
+      form.sizeTypes.forEach((type) => formData.append("sizeType", type));
 
       // Tags (multiple)
       tags.forEach((t) => formData.append("tags", t));
@@ -292,6 +313,12 @@ export default function AdminProducts() {
       .join(", ");
   };
 
+  const formatSizeType = (type: string) =>
+    type
+      .split("_")
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(" ");
+
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -316,426 +343,518 @@ export default function AdminProducts() {
               Add Product
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
-            <DialogHeader>
-              <DialogTitle className="font-serif">
-                {editingProduct ? "Edit Product" : "Add New Product"}
-              </DialogTitle>
-            </DialogHeader>
+          <DialogContent className="sm:max-w-2xl max-h-[90vh] p-0 overflow-hidden">
+            <div className="flex flex-col h-full max-h-[90vh]">
+              <DialogHeader className="px-6 pt-6 pb-2 flex-shrink-0">
+                <DialogTitle className="font-serif">
+                  {editingProduct ? "Edit Product" : "Add New Product"}
+                </DialogTitle>
+              </DialogHeader>
 
-            <div className="flex flex-col gap-6 pt-4">
-              {/* Basic Information Section */}
-              <div className="space-y-4">
-                <h3 className="text-sm font-semibold text-muted-foreground border-b pb-2">
-                  Basic Information
-                </h3>
+              {/* Scrollable content area - fixed height with overflow-y-auto */}
+              <div className="flex-1 overflow-y-auto px-6 pb-6 pt-2 min-h-0">
+                <div className="space-y-6">
+                  {/* Basic Information Section */}
+                  <div className="space-y-4">
+                    <h3 className="text-sm font-semibold text-muted-foreground border-b pb-2">
+                      Basic Information
+                    </h3>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="flex flex-col gap-2">
-                    <Label
-                      htmlFor="name"
-                      className="after:content-['*'] after:ml-0.5 after:text-red-500"
-                    >
-                      Product Name
-                    </Label>
-                    <Input
-                      id="name"
-                      value={form.name}
-                      onChange={(e) =>
-                        setForm((f) => ({ ...f, name: e.target.value }))
-                      }
-                      placeholder="Enter product name"
-                    />
-                  </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="flex flex-col gap-2">
+                        <Label
+                          htmlFor="name"
+                          className="after:content-['*'] after:ml-0.5 after:text-red-500"
+                        >
+                          Product Name
+                        </Label>
+                        <Input
+                          id="name"
+                          value={form.name}
+                          onChange={(e) =>
+                            setForm((f) => ({ ...f, name: e.target.value }))
+                          }
+                          placeholder="Enter product name"
+                        />
+                      </div>
 
-                  <div className="flex flex-col gap-2">
-                    <Label htmlFor="slug">Slug (URL)</Label>
-                    <Input
-                      id="slug"
-                      value={form.slug}
-                      onChange={(e) =>
-                        setForm((f) => ({ ...f, slug: e.target.value }))
-                      }
-                      placeholder="product-url-slug"
-                    />
-                  </div>
-                </div>
+                      <div className="flex flex-col gap-2">
+                        <Label htmlFor="slug">Slug (URL)</Label>
+                        <Input
+                          id="slug"
+                          value={form.slug}
+                          onChange={(e) =>
+                            setForm((f) => ({ ...f, slug: e.target.value }))
+                          }
+                          placeholder="product-url-slug"
+                        />
+                      </div>
+                    </div>
 
-                <div className="flex flex-col gap-2">
-                  <Label
-                    htmlFor="description"
-                    className="after:content-['*'] after:ml-0.5 after:text-red-500"
-                  >
-                    Description
-                  </Label>
-                  <Textarea
-                    id="description"
-                    value={form.description}
-                    onChange={(e) =>
-                      setForm((f) => ({ ...f, description: e.target.value }))
-                    }
-                    placeholder="Product description"
-                    rows={4}
-                  />
-                </div>
-              </div>
-
-              {/* Pricing & Stock Section */}
-              <div className="space-y-4">
-                <h3 className="text-sm font-semibold text-muted-foreground border-b pb-2">
-                  Pricing & Stock
-                </h3>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="flex flex-col gap-2">
-                    <Label
-                      htmlFor="price"
-                      className="after:content-['*'] after:ml-0.5 after:text-red-500"
-                    >
-                      Price (BDT)
-                    </Label>
-                    <Input
-                      id="price"
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      value={form.price}
-                      onChange={(e) =>
-                        setForm((f) => ({ ...f, price: e.target.value }))
-                      }
-                      placeholder="0.00"
-                    />
-                  </div>
-
-                  <div className="flex flex-col gap-2">
-                    <Label htmlFor="originalPrice">Original Price (BDT)</Label>
-                    <Input
-                      id="originalPrice"
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      value={form.originalPrice}
-                      onChange={(e) =>
-                        setForm((f) => ({
-                          ...f,
-                          originalPrice: e.target.value,
-                        }))
-                      }
-                      placeholder="0.00"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="flex flex-col gap-2">
-                    <Label
-                      htmlFor="stock"
-                      className="after:content-['*'] after:ml-0.5 after:text-red-500"
-                    >
-                      Stock Quantity
-                    </Label>
-                    <Input
-                      id="stock"
-                      type="number"
-                      min="0"
-                      value={form.stock}
-                      onChange={(e) =>
-                        setForm((f) => ({ ...f, stock: e.target.value }))
-                      }
-                      placeholder="0"
-                    />
-                  </div>
-
-                  <div className="flex flex-col gap-2">
-                    <Label htmlFor="stockPerSize">Stock Per Size (JSON)</Label>
-                    <Input
-                      id="stockPerSize"
-                      value={form.stockPerSize}
-                      onChange={(e) =>
-                        setForm((f) => ({ ...f, stockPerSize: e.target.value }))
-                      }
-                      placeholder='{"S": 10, "M": 5, "L": 8}'
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Optional: Override stock for specific sizes
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Categories Section - Multiple Select */}
-              <div className="space-y-4">
-                <h3 className="text-sm font-semibold text-muted-foreground border-b pb-2">
-                  Categories
-                </h3>
-
-                <div className="flex flex-col gap-2">
-                  <Label className="after:content-['*'] after:ml-0.5 after:text-red-500">
-                    Select Categories
-                  </Label>
-                  <Popover
-                    open={categoryPopoverOpen}
-                    onOpenChange={setCategoryPopoverOpen}
-                  >
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        role="combobox"
-                        aria-expanded={categoryPopoverOpen}
-                        className="justify-between h-auto min-h-10"
+                    <div className="flex flex-col gap-2">
+                      <Label
+                        htmlFor="description"
+                        className="after:content-['*'] after:ml-0.5 after:text-red-500"
                       >
-                        <div className="flex flex-wrap gap-1">
-                          {form.categoryIds.length > 0 ? (
-                            form.categoryIds.map((id) => {
-                              const category = categories.find(
-                                (c: any) => c.id === id,
-                              );
-                              return category ? (
-                                <Badge
-                                  key={id}
-                                  variant="secondary"
-                                  className="mr-1"
-                                >
-                                  {category.name}
-                                  <X
-                                    className="ml-1 h-3 w-3 cursor-pointer"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setForm((f) => ({
-                                        ...f,
-                                        categoryIds: f.categoryIds.filter(
-                                          (cId) => cId !== id,
-                                        ),
-                                      }));
-                                    }}
-                                  />
-                                </Badge>
-                              ) : null;
-                            })
-                          ) : (
-                            <span className="text-muted-foreground">
-                              Select categories...
-                            </span>
-                          )}
-                        </div>
-                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-full p-0">
-                      <Command>
-                        <CommandInput placeholder="Search categories..." />
-                        <CommandEmpty>No category found.</CommandEmpty>
-                        <CommandGroup className="max-h-64 overflow-auto">
-                          {categories.map((category: any) => (
-                            <CommandItem
-                              key={category.id}
-                              onSelect={() => {
-                                setForm((f) => ({
-                                  ...f,
-                                  categoryIds: f.categoryIds.includes(
-                                    category.id,
-                                  )
-                                    ? f.categoryIds.filter(
-                                        (id) => id !== category.id,
+                        Description
+                      </Label>
+                      <Textarea
+                        id="description"
+                        value={form.description}
+                        onChange={(e) =>
+                          setForm((f) => ({ ...f, description: e.target.value }))
+                        }
+                        placeholder="Product description"
+                        rows={4}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Pricing & Stock Section */}
+                  <div className="space-y-4">
+                    <h3 className="text-sm font-semibold text-muted-foreground border-b pb-2">
+                      Pricing & Stock
+                    </h3>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="flex flex-col gap-2">
+                        <Label
+                          htmlFor="price"
+                          className="after:content-['*'] after:ml-0.5 after:text-red-500"
+                        >
+                          Price (BDT)
+                        </Label>
+                        <Input
+                          id="price"
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={form.price}
+                          onChange={(e) =>
+                            setForm((f) => ({ ...f, price: e.target.value }))
+                          }
+                          placeholder="0.00"
+                        />
+                      </div>
+
+                      <div className="flex flex-col gap-2">
+                        <Label htmlFor="originalPrice">Original Price (BDT)</Label>
+                        <Input
+                          id="originalPrice"
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={form.originalPrice}
+                          onChange={(e) =>
+                            setForm((f) => ({
+                              ...f,
+                              originalPrice: e.target.value,
+                            }))
+                          }
+                          placeholder="0.00"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="flex flex-col gap-2">
+                        <Label
+                          htmlFor="stock"
+                          className="after:content-['*'] after:ml-0.5 after:text-red-500"
+                        >
+                          Stock Quantity
+                        </Label>
+                        <Input
+                          id="stock"
+                          type="number"
+                          min="0"
+                          value={form.stock}
+                          onChange={(e) =>
+                            setForm((f) => ({ ...f, stock: e.target.value }))
+                          }
+                          placeholder="0"
+                        />
+                      </div>
+
+                      <div className="flex flex-col gap-2">
+                        <Label htmlFor="stockPerSize">Stock Per Size (JSON)</Label>
+                        <Input
+                          id="stockPerSize"
+                          value={form.stockPerSize}
+                          onChange={(e) =>
+                            setForm((f) => ({ ...f, stockPerSize: e.target.value }))
+                          }
+                          placeholder='{"S": 10, "M": 5, "L": 8}'
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Optional: Override stock for specific sizes
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Categories Section - Multiple Select */}
+                  <div className="space-y-4">
+                    <h3 className="text-sm font-semibold text-muted-foreground border-b pb-2">
+                      Categories
+                    </h3>
+
+                    <div className="flex flex-col gap-2">
+                      <Label className="after:content-['*'] after:ml-0.5 after:text-red-500">
+                        Select Categories
+                      </Label>
+                      <Popover
+                        open={categoryPopoverOpen}
+                        onOpenChange={setCategoryPopoverOpen}
+                      >
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            role="combobox"
+                            aria-expanded={categoryPopoverOpen}
+                            className="justify-between h-auto min-h-10"
+                          >
+                            <div className="flex flex-wrap gap-1">
+                              {form.categoryIds.length > 0 ? (
+                                form.categoryIds.map((id) => {
+                                  const category = categories.find(
+                                    (c: any) => c.id === id,
+                                  );
+                                  return category ? (
+                                    <Badge
+                                      key={id}
+                                      variant="secondary"
+                                      className="mr-1"
+                                    >
+                                      {category.name}
+                                      <X
+                                        className="ml-1 h-3 w-3 cursor-pointer"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setForm((f) => ({
+                                            ...f,
+                                            categoryIds: f.categoryIds.filter(
+                                              (cId) => cId !== id,
+                                            ),
+                                          }));
+                                        }}
+                                      />
+                                    </Badge>
+                                  ) : null;
+                                })
+                              ) : (
+                                <span className="text-muted-foreground">
+                                  Select categories...
+                                </span>
+                              )}
+                            </div>
+                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-full p-0">
+                          <Command>
+                            <CommandInput placeholder="Search categories..." />
+                            <CommandEmpty>No category found.</CommandEmpty>
+                            <CommandGroup className="max-h-64 overflow-auto" onWheel={(e) => e.stopPropagation()}>
+                              {categories.map((category: any) => (
+                                <CommandItem
+                                  key={category.id}
+                                  onSelect={() => {
+                                    setForm((f) => ({
+                                      ...f,
+                                      categoryIds: f.categoryIds.includes(
+                                        category.id,
                                       )
-                                    : [...f.categoryIds, category.id],
-                                }));
-                              }}
-                            >
-                              <Check
-                                className={cn(
-                                  "mr-2 h-4 w-4",
-                                  form.categoryIds.includes(category.id)
-                                    ? "opacity-100"
-                                    : "opacity-0",
-                                )}
-                              />
-                              {category.name}
-                            </CommandItem>
-                          ))}
-                        </CommandGroup>
-                      </Command>
-                    </PopoverContent>
-                  </Popover>
-                  <p className="text-xs text-muted-foreground">
-                    Selected: {form.categoryIds.length} categories
-                  </p>
-                </div>
-              </div>
-
-              {/* Sizes Section - Multiple Select */}
-              <div className="space-y-4">
-                <h3 className="text-sm font-semibold text-muted-foreground border-b pb-2">
-                  Available Sizes
-                </h3>
-
-                <div className="flex flex-col gap-2">
-                  <Label className="after:content-['*'] after:ml-0.5 after:text-red-500">
-                    Select Sizes
-                  </Label>
-                  <Popover
-                    open={sizePopoverOpen}
-                    onOpenChange={setSizePopoverOpen}
-                  >
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        role="combobox"
-                        aria-expanded={sizePopoverOpen}
-                        className="justify-between h-auto min-h-10"
-                      >
-                        <div className="flex flex-wrap gap-1">
-                          {form.sizeIds.length > 0 ? (
-                            form.sizeIds.map((id) => {
-                              const size = sizes.find((s) => s.id === id);
-                              return size ? (
-                                <Badge
-                                  key={id}
-                                  variant="secondary"
-                                  className="mr-1"
+                                        ? f.categoryIds.filter(
+                                          (id) => id !== category.id,
+                                        )
+                                        : [...f.categoryIds, category.id],
+                                    }));
+                                  }}
                                 >
-                                  {size.name}
-                                  <X
-                                    className="ml-1 h-3 w-3 cursor-pointer"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setForm((f) => ({
-                                        ...f,
-                                        sizeIds: f.sizeIds.filter(
-                                          (sId) => sId !== id,
-                                        ),
-                                      }));
-                                    }}
+                                  <Check
+                                    className={cn(
+                                      "mr-2 h-4 w-4",
+                                      form.categoryIds.includes(category.id)
+                                        ? "opacity-100"
+                                        : "opacity-0",
+                                    )}
                                   />
-                                </Badge>
-                              ) : null;
-                            })
-                          ) : (
-                            <span className="text-muted-foreground">
-                              Select sizes...
-                            </span>
-                          )}
-                        </div>
-                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-full p-0">
-                      <Command>
-                        <CommandInput placeholder="Search sizes..." />
-                        <CommandEmpty>No size found.</CommandEmpty>
-                        <CommandGroup className="max-h-64 overflow-auto">
-                          {sizes.map((size) => (
-                            <CommandItem
-                              key={size.id}
-                              onSelect={() => {
-                                setForm((f) => ({
-                                  ...f,
-                                  sizeIds: f.sizeIds.includes(size.id)
-                                    ? f.sizeIds.filter((id) => id !== size.id)
-                                    : [...f.sizeIds, size.id],
-                                }));
-                              }}
-                            >
-                              <Check
-                                className={cn(
-                                  "mr-2 h-4 w-4",
-                                  form.sizeIds.includes(size.id)
-                                    ? "opacity-100"
-                                    : "opacity-0",
-                                )}
-                              />
-                              {size.name}
-                            </CommandItem>
-                          ))}
-                        </CommandGroup>
-                      </Command>
-                    </PopoverContent>
-                  </Popover>
+                                  {category.name}
+                                </CommandItem>
+                              ))}
+                            </CommandGroup>
+                          </Command>
+                        </PopoverContent>
+                      </Popover>
+                      <p className="text-xs text-muted-foreground">
+                        Selected: {form.categoryIds.length} categories
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Size Types Section - Multiple Select */}
+                  <div className="space-y-4">
+                    <h3 className="text-sm font-semibold text-muted-foreground border-b pb-2">
+                      Size Types
+                    </h3>
+
+                    <div className="flex flex-col gap-2">
+                      <Label>Choose Size Types</Label>
+                      <Popover
+                        open={sizeTypePopoverOpen}
+                        onOpenChange={setSizeTypePopoverOpen}
+                      >
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            role="combobox"
+                            aria-expanded={sizeTypePopoverOpen}
+                            className="justify-between h-auto min-h-10"
+                          >
+                            <div className="flex flex-wrap gap-1">
+                              {form.sizeTypes.length > 0 ? (
+                                form.sizeTypes.map((type) => (
+                                  <Badge
+                                    key={type}
+                                    variant="secondary"
+                                    className="mr-1"
+                                  >
+                                    {formatSizeType(type)}
+                                    <X
+                                      className="ml-1 h-3 w-3 cursor-pointer"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setForm((f) => ({
+                                          ...f,
+                                          sizeTypes: f.sizeTypes.filter((t) => t !== type),
+                                        }));
+                                      }}
+                                    />
+                                  </Badge>
+                                ))
+                              ) : (
+                                <span className="text-muted-foreground">
+                                  Select size types...
+                                </span>
+                              )}
+                            </div>
+                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-full p-0">
+                          <Command>
+                            <CommandInput placeholder="Search size types..." />
+                            <CommandEmpty>No size types found.</CommandEmpty>
+                            <CommandGroup className="max-h-64 overflow-auto" onWheel={(e) => e.stopPropagation()}>
+                              {sizeTypes.map((type) => (
+                                <CommandItem
+                                  key={type}
+                                  onSelect={() => {
+                                    setForm((f) => ({
+                                      ...f,
+                                      sizeTypes: f.sizeTypes.includes(type)
+                                        ? f.sizeTypes.filter((t) => t !== type)
+                                        : [...f.sizeTypes, type],
+                                    }));
+                                  }}
+                                >
+                                  <Check
+                                    className={cn(
+                                      "mr-2 h-4 w-4",
+                                      form.sizeTypes.includes(type)
+                                        ? "opacity-100"
+                                        : "opacity-0",
+                                    )}
+                                  />
+                                  {formatSizeType(type)}
+                                </CommandItem>
+                              ))}
+                            </CommandGroup>
+                          </Command>
+                        </PopoverContent>
+                      </Popover>
+                      <p className="text-xs text-muted-foreground">
+                        Selected: {form.sizeTypes.length} size type{form.sizeTypes.length === 1 ? "" : "s"}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Sizes Section - Multiple Select */}
+                  <div className="space-y-4">
+                    <h3 className="text-sm font-semibold text-muted-foreground border-b pb-2">
+                      Available Sizes
+                    </h3>
+
+                    <div className="flex flex-col gap-2">
+                      <Label className="after:content-['*'] after:ml-0.5 after:text-red-500">
+                        Select Sizes
+                      </Label>
+                      <Popover
+                        open={sizePopoverOpen}
+                        onOpenChange={setSizePopoverOpen}
+                      >
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            role="combobox"
+                            aria-expanded={sizePopoverOpen}
+                            className="justify-between h-auto min-h-10"
+                          >
+                            <div className="flex flex-wrap gap-1">
+                              {form.sizeIds.length > 0 ? (
+                                form.sizeIds.map((id) => {
+                                  const size = sizes.find((s) => s.id === id);
+                                  return size ? (
+                                    <Badge
+                                      key={id}
+                                      variant="secondary"
+                                      className="mr-1"
+                                    >
+                                      {size.name}
+                                      <X
+                                        className="ml-1 h-3 w-3 cursor-pointer"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setForm((f) => ({
+                                            ...f,
+                                            sizeIds: f.sizeIds.filter(
+                                              (sId) => sId !== id,
+                                            ),
+                                          }));
+                                        }}
+                                      />
+                                    </Badge>
+                                  ) : null;
+                                })
+                              ) : (
+                                <span className="text-muted-foreground">
+                                  Select sizes...
+                                </span>
+                              )}
+                            </div>
+                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-full p-0">
+                          <Command>
+                            <CommandInput placeholder="Search sizes..." />
+                            <CommandEmpty>No size found.</CommandEmpty>
+                            <CommandGroup className="max-h-64 overflow-auto" onWheel={(e) => e.stopPropagation()}>
+                              {sizes.map((size) => (
+                                <CommandItem
+                                  key={size.id}
+                                  onSelect={() => {
+                                    setForm((f) => ({
+                                      ...f,
+                                      sizeIds: f.sizeIds.includes(size.id)
+                                        ? f.sizeIds.filter((id) => id !== size.id)
+                                        : [...f.sizeIds, size.id],
+                                    }));
+                                  }}
+                                >
+                                  <Check
+                                    className={cn(
+                                      "mr-2 h-4 w-4",
+                                      form.sizeIds.includes(size.id)
+                                        ? "opacity-100"
+                                        : "opacity-0",
+                                    )}
+                                  />
+                                  {size.name}
+                                </CommandItem>
+                              ))}
+                            </CommandGroup>
+                          </Command>
+                        </PopoverContent>
+                      </Popover>
+                      <p className="text-xs text-muted-foreground">
+                        Selected: {form.sizeIds.length} sizes
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Media Section */}
+                  <div className="space-y-4">
+                    <h3 className="text-sm font-semibold text-muted-foreground border-b pb-2">
+                      Media & Tags
+                    </h3>
+
+                    <div className="flex flex-col gap-2">
+                      <Label
+                        htmlFor="images"
+                        className="after:content-['*'] after:ml-0.5 after:text-red-500"
+                      >
+                        Product Images
+                      </Label>
+                      <Input
+                        id="images"
+                        type="file"
+                        multiple
+                        accept="image/*"
+                        onChange={(e) => setSelectedImages(e.target.files)}
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Upload up to 10 images. First image will be the cover.{" "}
+                        {editingProduct && "Leave empty to keep existing images."}
+                      </p>
+                    </div>
+
+                    <div className="flex flex-col gap-2">
+                      <Label htmlFor="tags">Tags (comma-separated)</Label>
+                      <Input
+                        id="tags"
+                        value={form.tags}
+                        onChange={(e) =>
+                          setForm((f) => ({ ...f, tags: e.target.value }))
+                        }
+                        placeholder="eid, formal, embroidered, summer"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Settings Section */}
+                  <div className="space-y-4">
+                    <h3 className="text-sm font-semibold text-muted-foreground border-b pb-2">
+                      Settings
+                    </h3>
+
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        id="featured"
+                        checked={form.featured}
+                        onChange={(e) =>
+                          setForm((f) => ({ ...f, featured: e.target.checked }))
+                        }
+                        className="h-4 w-4 rounded border-input"
+                      />
+                      <Label htmlFor="featured" className="text-sm">
+                        Mark as featured product (appears on homepage)
+                      </Label>
+                    </div>
+                  </div>
+
+                  {/* Required Fields Note */}
                   <p className="text-xs text-muted-foreground">
-                    Selected: {form.sizeIds.length} sizes
+                    <span className="text-red-500">*</span> Required fields
                   </p>
-                </div>
-              </div>
 
-              {/* Media Section */}
-              <div className="space-y-4">
-                <h3 className="text-sm font-semibold text-muted-foreground border-b pb-2">
-                  Media & Tags
-                </h3>
-
-                <div className="flex flex-col gap-2">
-                  <Label
-                    htmlFor="images"
-                    className="after:content-['*'] after:ml-0.5 after:text-red-500"
+                  {/* Submit Button */}
+                  <Button
+                    onClick={handleSave}
+                    className="w-full"
+                    disabled={loading}
+                    size="lg"
                   >
-                    Product Images
-                  </Label>
-                  <Input
-                    id="images"
-                    type="file"
-                    multiple
-                    accept="image/*"
-                    onChange={(e) => setSelectedImages(e.target.files)}
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Upload up to 10 images. First image will be the cover.{" "}
-                    {editingProduct && "Leave empty to keep existing images."}
-                  </p>
-                </div>
-
-                <div className="flex flex-col gap-2">
-                  <Label htmlFor="tags">Tags (comma-separated)</Label>
-                  <Input
-                    id="tags"
-                    value={form.tags}
-                    onChange={(e) =>
-                      setForm((f) => ({ ...f, tags: e.target.value }))
-                    }
-                    placeholder="eid, formal, embroidered, summer"
-                  />
+                    {loading
+                      ? "Saving..."
+                      : editingProduct
+                        ? "Update Product"
+                        : "Create Product"}
+                  </Button>
                 </div>
               </div>
-
-              {/* Settings Section */}
-              <div className="space-y-4">
-                <h3 className="text-sm font-semibold text-muted-foreground border-b pb-2">
-                  Settings
-                </h3>
-
-                <div className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    id="featured"
-                    checked={form.featured}
-                    onChange={(e) =>
-                      setForm((f) => ({ ...f, featured: e.target.checked }))
-                    }
-                    className="h-4 w-4 rounded border-input"
-                  />
-                  <Label htmlFor="featured" className="text-sm">
-                    Mark as featured product (appears on homepage)
-                  </Label>
-                </div>
-              </div>
-
-              {/* Required Fields Note */}
-              <p className="text-xs text-muted-foreground">
-                <span className="text-red-500">*</span> Required fields
-              </p>
-
-              {/* Submit Button */}
-              <Button
-                onClick={handleSave}
-                className="w-full"
-                disabled={loading}
-                size="lg"
-              >
-                {loading
-                  ? "Saving..."
-                  : editingProduct
-                    ? "Update Product"
-                    : "Create Product"}
-              </Button>
             </div>
           </DialogContent>
         </Dialog>

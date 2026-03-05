@@ -352,12 +352,12 @@ export default function AdminSizesPage() {
       prev.map((entry) =>
         entry.id === entryId
           ? {
-              ...entry,
-              sizeType:
-                (entry.sizeType?.length ?? 0) === 1 && entry.sizeType?.[0] === value
-                  ? []
-                  : [value],
-            }
+            ...entry,
+            sizeType:
+              (entry.sizeType?.length ?? 0) === 1 && entry.sizeType?.[0] === value
+                ? []
+                : [value],
+          }
           : entry,
       ),
     );
@@ -432,8 +432,8 @@ export default function AdminSizesPage() {
                     </button>
                   )}
                 </div>
-                <Button 
-                  onClick={openCreate} 
+                <Button
+                  onClick={openCreate}
                   className="h-11 gap-2 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary shadow-lg"
                 >
                   <Plus className="h-4 w-4" />
@@ -675,253 +675,253 @@ export default function AdminSizesPage() {
               <div className="flex-1 overflow-hidden px-6 py-4 pb-8">
                 <ScrollArea className="h-full">
                   <div className="space-y-6 pb-8">
-                  {sizeEntries.map((entry, index) => (
-                    <div
-                      key={entry.id}
-                      className="group relative rounded-xl border border-primary/10 bg-gradient-to-br from-background via-background to-secondary/5 p-5 shadow-lg hover:shadow-xl transition-all duration-300"
-                    >
-                      {/* Entry Header */}
-                      <div className="flex items-center justify-between mb-4">
-                        <div className="flex items-center gap-3">
-                          <Avatar className="h-8 w-8 border border-primary/20">
-                            <AvatarFallback className="bg-primary/5 text-xs">
-                              #{index + 1}
-                            </AvatarFallback>
-                          </Avatar>
-                          <Badge variant="outline" className="border-primary/20 bg-primary/5">
-                            Entry {index + 1}
-                          </Badge>
+                    {sizeEntries.map((entry, index) => (
+                      <div
+                        key={entry.id}
+                        className="group relative rounded-xl border border-primary/10 bg-gradient-to-br from-background via-background to-secondary/5 p-5 shadow-lg hover:shadow-xl transition-all duration-300"
+                      >
+                        {/* Entry Header */}
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="flex items-center gap-3">
+                            <Avatar className="h-8 w-8 border border-primary/20">
+                              <AvatarFallback className="bg-primary/5 text-xs">
+                                #{index + 1}
+                              </AvatarFallback>
+                            </Avatar>
+                            <Badge variant="outline" className="border-primary/20 bg-primary/5">
+                              Entry {index + 1}
+                            </Badge>
+                          </div>
+                          {!editing && (
+                            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => duplicateEntry(index)}
+                                    className="h-8 w-8 hover:bg-primary/10 hover:text-primary"
+                                  >
+                                    <Copy className="h-4 w-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>Duplicate entry</TooltipContent>
+                              </Tooltip>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => removeEntry(entry.id)}
+                                    className="h-8 w-8 hover:bg-destructive/10 hover:text-destructive"
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>Remove entry</TooltipContent>
+                              </Tooltip>
+                            </div>
+                          )}
                         </div>
-                        {!editing && (
-                          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <Tooltip>
-                              <TooltipTrigger asChild>
+
+                        {/* Basic Info Section */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+                          <div className="space-y-2">
+                            <Label className="text-xs font-medium flex items-center gap-1">
+                              <Tag className="h-3 w-3" />
+                              Size *
+                            </Label>
+                            <Input
+                              value={entry.size}
+                              onChange={(e) => updateEntry(entry.id, "size", e.target.value)}
+                              placeholder="e.g., S, M, L, XL"
+                              className="h-10 bg-background/50 border-primary/20 focus:border-primary"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label className="text-xs font-medium flex items-center gap-1">
+                              <Hash className="h-3 w-3" />
+                              Order
+                            </Label>
+                            <Input
+                              type="number"
+                              value={entry.order}
+                              onChange={(e) => updateEntry(entry.id, "order", e.target.value)}
+                              placeholder="Display order"
+                              className="h-10 bg-background/50 border-primary/20 focus:border-primary"
+                            />
+                          </div>
+                          <div className="space-y-2 lg:col-span-2">
+                            <Label className="text-xs font-medium flex items-center gap-1">
+                              <Shirt className="h-3 w-3" />
+                              Size Type
+                            </Label>
+                            <Popover
+                              open={typePopoverOpen[entry.id]}
+                              onOpenChange={(open) =>
+                                setTypePopoverOpen((prev) => ({
+                                  ...prev,
+                                  [entry.id]: open,
+                                }))
+                              }
+                            >
+                              <PopoverTrigger asChild>
                                 <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => duplicateEntry(index)}
-                                  className="h-8 w-8 hover:bg-primary/10 hover:text-primary"
+                                  variant="outline"
+                                  className="w-full h-10 justify-between text-sm bg-background/50 border-primary/20 hover:bg-primary/5"
                                 >
-                                  <Copy className="h-4 w-4" />
+                                  <span className="truncate">
+                                    {entry.sizeType && entry.sizeType.length > 0
+                                      ? formatSizeType(entry.sizeType[0])
+                                      : "Select a size type..."}
+                                  </span>
+                                  <ChevronsUpDown className="h-3 w-3 shrink-0 opacity-50" />
                                 </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>Duplicate entry</TooltipContent>
-                            </Tooltip>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => removeEntry(entry.id)}
-                                  className="h-8 w-8 hover:bg-destructive/10 hover:text-destructive"
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>Remove entry</TooltipContent>
-                            </Tooltip>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-[300px] p-0" align="start">
+                                <Command>
+                                  <CommandInput placeholder="Search types..." className="h-9" />
+                                  <CommandEmpty>No types found.</CommandEmpty>
+                                  <CommandGroup className="max-h-48 overflow-auto" onWheel={(e) => e.stopPropagation()}>
+                                    {sizeTypes.map((type) => (
+                                      <CommandItem
+                                        key={type}
+                                        value={type}
+                                        onSelect={() => setSizeType(entry.id, type)}
+                                      >
+                                        <Check
+                                          className={cn(
+                                            "mr-2 h-3 w-3",
+                                            entry.sizeType?.[0] === type
+                                              ? "opacity-100"
+                                              : "opacity-0",
+                                          )}
+                                        />
+                                        <span className="text-sm">{formatSizeType(type)}</span>
+                                      </CommandItem>
+                                    ))}
+                                  </CommandGroup>
+                                </Command>
+                              </PopoverContent>
+                            </Popover>
                           </div>
-                        )}
+                        </div>
+
+                        {/* Measurements Sections with Tabs */}
+                        <Tabs defaultValue="primary" className="w-full">
+                          <TabsList className="grid w-full grid-cols-3 bg-muted/50 p-1">
+                            <TabsTrigger value="primary" className="text-xs">
+                              Primary Measurements
+                            </TabsTrigger>
+                            <TabsTrigger value="secondary" className="text-xs">
+                              Secondary
+                            </TabsTrigger>
+                            <TabsTrigger value="additional" className="text-xs">
+                              Additional
+                            </TabsTrigger>
+                          </TabsList>
+
+                          <TabsContent value="primary" className="mt-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                              {measurementFields.primary.map((field) => (
+                                <div key={field.key} className="space-y-2">
+                                  <Label className="text-xs font-medium flex items-center gap-1">
+                                    <field.icon className="h-3 w-3" />
+                                    {field.label}
+                                    <Tooltip>
+                                      <TooltipTrigger>
+                                        <HelpCircle className="h-3 w-3 text-muted-foreground" />
+                                      </TooltipTrigger>
+                                      <TooltipContent side="top">{field.tooltip}</TooltipContent>
+                                    </Tooltip>
+                                  </Label>
+                                  <div className="relative">
+                                    <Input
+                                      type="number"
+                                      value={entry[field.key as keyof SizeFormEntry]}
+                                      onChange={(e) =>
+                                        updateEntry(entry.id, field.key as keyof SizeFormEntry, e.target.value)
+                                      }
+                                      placeholder="0"
+                                      className="h-9 text-sm pr-7 bg-background/50 border-primary/20 focus:border-primary"
+                                    />
+                                    <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
+                                      cm
+                                    </span>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </TabsContent>
+
+                          <TabsContent value="secondary" className="mt-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                              {measurementFields.secondary.map((field) => (
+                                <div key={field.key} className="space-y-2">
+                                  <Label className="text-xs font-medium flex items-center gap-1">
+                                    <field.icon className="h-3 w-3" />
+                                    {field.label}
+                                    <Tooltip>
+                                      <TooltipTrigger>
+                                        <HelpCircle className="h-3 w-3 text-muted-foreground" />
+                                      </TooltipTrigger>
+                                      <TooltipContent side="top">{field.tooltip}</TooltipContent>
+                                    </Tooltip>
+                                  </Label>
+                                  <div className="relative">
+                                    <Input
+                                      type="number"
+                                      value={entry[field.key as keyof SizeFormEntry]}
+                                      onChange={(e) =>
+                                        updateEntry(entry.id, field.key as keyof SizeFormEntry, e.target.value)
+                                      }
+                                      placeholder="0"
+                                      className="h-9 text-sm pr-7 bg-background/50 border-primary/20 focus:border-primary"
+                                    />
+                                    <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
+                                      cm
+                                    </span>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </TabsContent>
+
+                          <TabsContent value="additional" className="mt-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                              {measurementFields.additional.map((field) => (
+                                <div key={field.key} className="space-y-2">
+                                  <Label className="text-xs font-medium flex items-center gap-1">
+                                    <field.icon className="h-3 w-3" />
+                                    {field.label}
+                                    <Tooltip>
+                                      <TooltipTrigger>
+                                        <HelpCircle className="h-3 w-3 text-muted-foreground" />
+                                      </TooltipTrigger>
+                                      <TooltipContent side="top">{field.tooltip}</TooltipContent>
+                                    </Tooltip>
+                                  </Label>
+                                  <div className="relative">
+                                    <Input
+                                      type="number"
+                                      value={entry[field.key as keyof SizeFormEntry]}
+                                      onChange={(e) =>
+                                        updateEntry(entry.id, field.key as keyof SizeFormEntry, e.target.value)
+                                      }
+                                      placeholder="0"
+                                      className="h-9 text-sm pr-7 bg-background/50 border-primary/20 focus:border-primary"
+                                    />
+                                    <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
+                                      cm
+                                    </span>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </TabsContent>
+                        </Tabs>
                       </div>
-
-                      {/* Basic Info Section */}
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-                        <div className="space-y-2">
-                          <Label className="text-xs font-medium flex items-center gap-1">
-                            <Tag className="h-3 w-3" />
-                            Size *
-                          </Label>
-                          <Input
-                            value={entry.size}
-                            onChange={(e) => updateEntry(entry.id, "size", e.target.value)}
-                            placeholder="e.g., S, M, L, XL"
-                            className="h-10 bg-background/50 border-primary/20 focus:border-primary"
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label className="text-xs font-medium flex items-center gap-1">
-                            <Hash className="h-3 w-3" />
-                            Order
-                          </Label>
-                          <Input
-                            type="number"
-                            value={entry.order}
-                            onChange={(e) => updateEntry(entry.id, "order", e.target.value)}
-                            placeholder="Display order"
-                            className="h-10 bg-background/50 border-primary/20 focus:border-primary"
-                          />
-                        </div>
-                        <div className="space-y-2 lg:col-span-2">
-                          <Label className="text-xs font-medium flex items-center gap-1">
-                            <Shirt className="h-3 w-3" />
-                            Size Type
-                          </Label>
-                          <Popover
-                            open={typePopoverOpen[entry.id]}
-                            onOpenChange={(open) =>
-                              setTypePopoverOpen((prev) => ({
-                                ...prev,
-                                [entry.id]: open,
-                              }))
-                            }
-                          >
-                            <PopoverTrigger asChild>
-                              <Button
-                                variant="outline"
-                                className="w-full h-10 justify-between text-sm bg-background/50 border-primary/20 hover:bg-primary/5"
-                              >
-                                <span className="truncate">
-                                  {entry.sizeType && entry.sizeType.length > 0
-                                    ? formatSizeType(entry.sizeType[0])
-                                    : "Select a size type..."}
-                                </span>
-                                <ChevronsUpDown className="h-3 w-3 shrink-0 opacity-50" />
-                              </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-[300px] p-0" align="start">
-                              <Command>
-                                <CommandInput placeholder="Search types..." className="h-9" />
-                                <CommandEmpty>No types found.</CommandEmpty>
-                                <CommandGroup className="max-h-48 overflow-auto">
-                                  {sizeTypes.map((type) => (
-                                    <CommandItem
-                                      key={type}
-                                      value={type}
-                                      onSelect={() => setSizeType(entry.id, type)}
-                                    >
-                                      <Check
-                                        className={cn(
-                                          "mr-2 h-3 w-3",
-                                          entry.sizeType?.[0] === type
-                                            ? "opacity-100"
-                                            : "opacity-0",
-                                        )}
-                                      />
-                                      <span className="text-sm">{formatSizeType(type)}</span>
-                                    </CommandItem>
-                                  ))}
-                                </CommandGroup>
-                              </Command>
-                            </PopoverContent>
-                          </Popover>
-                        </div>
-                      </div>
-
-                      {/* Measurements Sections with Tabs */}
-                      <Tabs defaultValue="primary" className="w-full">
-                        <TabsList className="grid w-full grid-cols-3 bg-muted/50 p-1">
-                          <TabsTrigger value="primary" className="text-xs">
-                            Primary Measurements
-                          </TabsTrigger>
-                          <TabsTrigger value="secondary" className="text-xs">
-                            Secondary
-                          </TabsTrigger>
-                          <TabsTrigger value="additional" className="text-xs">
-                            Additional
-                          </TabsTrigger>
-                        </TabsList>
-                        
-                        <TabsContent value="primary" className="mt-4">
-                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                            {measurementFields.primary.map((field) => (
-                              <div key={field.key} className="space-y-2">
-                                <Label className="text-xs font-medium flex items-center gap-1">
-                                  <field.icon className="h-3 w-3" />
-                                  {field.label}
-                                  <Tooltip>
-                                    <TooltipTrigger>
-                                      <HelpCircle className="h-3 w-3 text-muted-foreground" />
-                                    </TooltipTrigger>
-                                    <TooltipContent side="top">{field.tooltip}</TooltipContent>
-                                  </Tooltip>
-                                </Label>
-                                <div className="relative">
-                                  <Input
-                                    type="number"
-                                    value={entry[field.key as keyof SizeFormEntry]}
-                                    onChange={(e) =>
-                                      updateEntry(entry.id, field.key as keyof SizeFormEntry, e.target.value)
-                                    }
-                                    placeholder="0"
-                                    className="h-9 text-sm pr-7 bg-background/50 border-primary/20 focus:border-primary"
-                                  />
-                                  <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
-                                    cm
-                                  </span>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </TabsContent>
-
-                        <TabsContent value="secondary" className="mt-4">
-                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                            {measurementFields.secondary.map((field) => (
-                              <div key={field.key} className="space-y-2">
-                                <Label className="text-xs font-medium flex items-center gap-1">
-                                  <field.icon className="h-3 w-3" />
-                                  {field.label}
-                                  <Tooltip>
-                                    <TooltipTrigger>
-                                      <HelpCircle className="h-3 w-3 text-muted-foreground" />
-                                    </TooltipTrigger>
-                                    <TooltipContent side="top">{field.tooltip}</TooltipContent>
-                                  </Tooltip>
-                                </Label>
-                                <div className="relative">
-                                  <Input
-                                    type="number"
-                                    value={entry[field.key as keyof SizeFormEntry]}
-                                    onChange={(e) =>
-                                      updateEntry(entry.id, field.key as keyof SizeFormEntry, e.target.value)
-                                    }
-                                    placeholder="0"
-                                    className="h-9 text-sm pr-7 bg-background/50 border-primary/20 focus:border-primary"
-                                  />
-                                  <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
-                                    cm
-                                  </span>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </TabsContent>
-
-                        <TabsContent value="additional" className="mt-4">
-                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                            {measurementFields.additional.map((field) => (
-                              <div key={field.key} className="space-y-2">
-                                <Label className="text-xs font-medium flex items-center gap-1">
-                                  <field.icon className="h-3 w-3" />
-                                  {field.label}
-                                  <Tooltip>
-                                    <TooltipTrigger>
-                                      <HelpCircle className="h-3 w-3 text-muted-foreground" />
-                                    </TooltipTrigger>
-                                    <TooltipContent side="top">{field.tooltip}</TooltipContent>
-                                  </Tooltip>
-                                </Label>
-                                <div className="relative">
-                                  <Input
-                                    type="number"
-                                    value={entry[field.key as keyof SizeFormEntry]}
-                                    onChange={(e) =>
-                                      updateEntry(entry.id, field.key as keyof SizeFormEntry, e.target.value)
-                                    }
-                                    placeholder="0"
-                                    className="h-9 text-sm pr-7 bg-background/50 border-primary/20 focus:border-primary"
-                                  />
-                                  <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
-                                    cm
-                                  </span>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </TabsContent>
-                      </Tabs>
-                    </div>
-                  ))}
+                    ))}
                   </div>
                 </ScrollArea>
               </div>
